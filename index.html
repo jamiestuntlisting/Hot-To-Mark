@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hot to Mark - Stunt Driving Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+canvas { border: 2px solid #333; border-radius: 4px; }
+#ui-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; display: flex; flex-direction: column; align-items: center;
+}
+#hud { position: absolute; top: 10px; left: 10px; color: #fff; font-size: 14px; text-shadow: 1px 1px 2px #000; }
+#hud div { margin-bottom: 4px; }
+#message-box {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.85); color: #fff; padding: 30px 50px; border-radius: 12px;
+  text-align: center; font-size: 20px; display: none; pointer-events: auto;
+  border: 2px solid #f90;
+}
+#message-box h2 { color: #f90; margin-bottom: 10px; }
+#message-box .score { font-size: 36px; font-weight: bold; color: #0f0; }
+#message-box .penalty { color: #f44; }
+#message-box button {
+  margin-top: 15px; padding: 10px 30px; font-size: 16px; cursor: pointer;
+  background: #f90; border: none; border-radius: 6px; color: #000; font-weight: bold;
+}
+#message-box button:hover { background: #fb0; }
+#controls-help {
+  position: absolute; bottom: 10px; left: 10px; color: #aaa; font-size: 12px;
+  text-shadow: 1px 1px 2px #000;
+}
+#mode-select {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.92); color: #fff; padding: 40px 60px; border-radius: 16px;
+  text-align: center; pointer-events: auto; border: 2px solid #f90;
+}
+#mode-select h1 { color: #f90; font-size: 42px; margin-bottom: 5px; }
+#mode-select .subtitle { color: #ccc; margin-bottom: 25px; font-style: italic; }
+#mode-select button {
+  display: block; width: 100%; margin: 8px 0; padding: 14px 30px; font-size: 18px;
+  cursor: pointer; background: #222; border: 2px solid #f90; border-radius: 8px;
+  color: #fff; font-weight: bold; transition: all 0.2s;
+}
+#mode-select button:hover { background: #f90; color: #000; }
+#mode-select .mode-desc { font-size: 12px; color: #999; margin-top: -4px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui-overlay">
+  <div id="hud"></div>
+  <div id="message-box"></div>
+  <div id="mode-select"></div>
+  <div id="controls-help"></div>
+</div>
+
+<script>
+// ============================================================
+// HOT TO MARK - Stunt Driving Game
+// ============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const W = 1200, H = 750;
+canvas.width = W;
+canvas.height = H;
+
+// --- GAME STATE ---
+const PHASE = { MENU: 0, DRIVING_TO_MARK: 1, STOPPED_ON_MARK: 2, HONKING: 3, REVERSING: 4, RESULTS: 5 };
+
+let state = {
+  phase: PHASE.MENU,
+  mode: 'standard', // standard, speed, smooth, exactmph
+  // Car physics
+  posX: 0,          // lateral position (-1 to 1)
+  posY: 0,          // distance traveled (feet)
+  speed: 0,         // mph
+  steering: 0,      // -1 to 1
+  throttle: 0,
+  brake: 0,
+  gear: 'D',        // D or R
+  // Mark
+  markDistance: 200, // feet to the mark
+  startDistance: 0,
+  // Scoring
+  markAccuracy: 0,
+  honkCount: 0,
+  honkPenalty: false,
+  reverseStartTime: 0,
+  reverseTooSlow: false,
+  reverseTooFast: false,
+  reverseMaxSpeed: 0,
+  reverseAccuracy: 0,
+  smoothnessScore: 100,
+  lastThrottle: 0,
+  lastSteering: 0,
+  jerkAccum: 0,
+  maxSpeedHit: 0,
+  targetMPH: 0,     // for exact mph mode
+  exactMPHAccuracy: 0,
+  checkpointPassed: false,
+  checkpointDistance: 0,
+  speedAtCheckpoint: 0,
+  takeTime: 0,
+  takeStartTime: 0,
+  // Animation
+  wheelAngle: 0,
+  roadOffset: 0,
+  // Input
+  keys: {},
+};
+
+// --- INPUT ---
+document.addEventListener('keydown', e => {
+  state.keys[e.code] = true;
+  if (e.code === 'Space' && (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING)) {
+    e.preventDefault();
+    handleHonk();
+  }
+});
+document.addEventListener('keyup', e => { state.keys[e.code] = false; });
+
+function handleHonk() {
+  if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+    state.honkCount++;
+    state.phase = PHASE.HONKING;
+    honkSound();
+    if (state.honkCount >= 2) {
+      setTimeout(() => {
+        state.gear = 'R';
+        state.phase = PHASE.REVERSING;
+        state.reverseStartTime = performance.now();
+      }, 500);
+    }
+  }
+}
+
+function honkSound() {
+  try {
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.frequency.value = 340;
+    osc.type = 'square';
+    gain.gain.value = 0.15;
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
+    osc.stop(actx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+// --- MODES ---
+function showMenu() {
+  state.phase = PHASE.MENU;
+  const el = document.getElementById('mode-select');
+  el.innerHTML = `
+    <h1>HOT TO MARK</h1>
+    <div class="subtitle">The Stunt Driving Game</div>
+    <button onclick="startGame('standard')">Standard Take</button>
+    <div class="mode-desc">Drive to the mark, stop accurately, reverse to one.</div>
+    <button onclick="startGame('speed')">Speed Run</button>
+    <div class="mode-desc">Complete the take as fast as possible.</div>
+    <button onclick="startGame('smooth')">Smooth Operator</button>
+    <div class="mode-desc">Minimize jerky inputs. Be cinematic.</div>
+    <button onclick="startGame('exactmph')">Exact MPH</button>
+    <div class="mode-desc">Hit exactly the target speed at the checkpoint.</div>
+  `;
+  el.style.display = 'block';
+  document.getElementById('message-box').style.display = 'none';
+  document.getElementById('controls-help').innerHTML = '';
+}
+
+function startGame(mode) {
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('message-box').style.display = 'none';
+
+  const markDist = 150 + Math.random() * 200; // 150-350 feet
+  const targetMPH = 15 + Math.floor(Math.random() * 20); // 15-34 mph
+
+  Object.assign(state, {
+    phase: PHASE.DRIVING_TO_MARK,
+    mode: mode,
+    posX: 0, posY: 0, speed: 0, steering: 0,
+    throttle: 0, brake: 0, gear: 'D',
+    markDistance: markDist,
+    startDistance: 0,
+    markAccuracy: 0, honkCount: 0, honkPenalty: false,
+    reverseStartTime: 0, reverseTooSlow: false, reverseTooFast: false,
+    reverseMaxSpeed: 0, reverseAccuracy: 0,
+    smoothnessScore: 100, lastThrottle: 0, lastSteering: 0, jerkAccum: 0,
+    maxSpeedHit: 0, targetMPH: targetMPH, exactMPHAccuracy: 0,
+    checkpointPassed: false,
+    checkpointDistance: markDist * 0.6,
+    speedAtCheckpoint: 0,
+    takeTime: 0, takeStartTime: performance.now(),
+    wheelAngle: 0, roadOffset: 0,
+  });
+
+  document.getElementById('controls-help').innerHTML =
+    'W/Up: Gas &nbsp; S/Down: Brake &nbsp; A/D or Left/Right: Steer &nbsp; Space: Honk &nbsp; (Reverse uses same controls)';
+}
+
+// expose to onclick
+window.startGame = startGame;
+
+// --- PHYSICS UPDATE ---
+function updatePhysics(dt) {
+  if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
+
+  const k = state.keys;
+  // Throttle / brake
+  state.throttle = (k['KeyW'] || k['ArrowUp']) ? 1 : 0;
+  state.brake = (k['KeyS'] || k['ArrowDown']) ? 1 : 0;
+
+  // Steering
+  let steerInput = 0;
+  if (k['KeyA'] || k['ArrowLeft']) steerInput = -1;
+  if (k['KeyD'] || k['ArrowRight']) steerInput = 1;
+  state.steering += (steerInput * 0.8 - state.steering) * dt * 5;
+  state.wheelAngle = state.steering * 45;
+
+  // Smoothness tracking
+  const throttleJerk = Math.abs(state.throttle - state.lastThrottle);
+  const steerJerk = Math.abs(state.steering - state.lastSteering);
+  state.jerkAccum += (throttleJerk + steerJerk * 0.5) * dt * 60;
+  state.lastThrottle = state.throttle;
+  state.lastSteering = state.steering;
+
+  const isReversing = state.gear === 'R';
+  const dir = isReversing ? -1 : 1;
+
+  if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+    // Waiting to honk - car is stopped
+    state.speed *= 0.95;
+    if (Math.abs(state.speed) < 0.1) state.speed = 0;
+    return;
+  }
+
+  // Acceleration
+  const accelForce = state.throttle * 35; // mph/s
+  const brakeForce = state.brake * 50;    // mph/s
+  const drag = state.speed * 0.5;
+  const friction = 2;
+
+  if (isReversing) {
+    state.speed -= accelForce * dt;       // negative speed = reverse
+    if (state.speed > 0) state.speed = 0;
+    state.speed += brakeForce * dt;
+    if (state.speed > 0) state.speed = 0;
+    state.speed += (drag + friction) * dt * (state.speed < 0 ? 1 : 0);
+  } else {
+    state.speed += accelForce * dt;
+    state.speed -= brakeForce * dt;
+    state.speed -= (drag + friction) * dt;
+  }
+
+  if (!isReversing && state.speed < 0) state.speed = 0;
+  if (isReversing && state.speed > 0) state.speed = 0;
+  state.speed = Math.max(-25, Math.min(60, state.speed));
+
+  // Position
+  const feetPerSec = state.speed * 1.467; // mph to ft/s
+  state.posY += feetPerSec * dt;
+  state.posX += state.steering * Math.abs(state.speed) * 0.003 * dt * 60;
+  state.posX = Math.max(-1, Math.min(1, state.posX));
+  state.roadOffset += feetPerSec * dt;
+
+  // Track max speed
+  if (state.speed > state.maxSpeedHit) state.maxSpeedHit = state.speed;
+  if (isReversing && Math.abs(state.speed) > state.reverseMaxSpeed) {
+    state.reverseMaxSpeed = Math.abs(state.speed);
+  }
+
+  // Checkpoint for exact MPH mode
+  if (!isReversing && !state.checkpointPassed && state.posY >= state.checkpointDistance) {
+    state.checkpointPassed = true;
+    state.speedAtCheckpoint = state.speed;
+    state.exactMPHAccuracy = 100 - Math.abs(state.speed - state.targetMPH) * 5;
+    if (state.exactMPHAccuracy < 0) state.exactMPHAccuracy = 0;
+  }
+
+  // Stopping on mark
+  if (state.phase === PHASE.DRIVING_TO_MARK && state.posY >= state.markDistance - 5 && Math.abs(state.speed) < 0.5 && state.speed >= 0) {
+    const distFromMark = Math.abs(state.posY - state.markDistance);
+    const threshold = state.markDistance * 0.05; // 5%
+    state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
+    state.speed = 0;
+    state.phase = PHASE.STOPPED_ON_MARK;
+  }
+
+  // Auto-stop if overshot significantly
+  if (state.phase === PHASE.DRIVING_TO_MARK && state.posY > state.markDistance + 20 && Math.abs(state.speed) < 0.5) {
+    const distFromMark = Math.abs(state.posY - state.markDistance);
+    const threshold = state.markDistance * 0.05;
+    state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
+    state.speed = 0;
+    state.phase = PHASE.STOPPED_ON_MARK;
+  }
+
+  // Reverse to one complete
+  if (state.phase === PHASE.REVERSING && state.posY <= 2 && Math.abs(state.speed) < 0.5) {
+    state.speed = 0;
+    const distFromStart = Math.abs(state.posY);
+    state.reverseAccuracy = Math.max(0, 100 - distFromStart * 10);
+    state.takeTime = (performance.now() - state.takeStartTime) / 1000;
+
+    // Check penalties
+    const reverseTime = (performance.now() - state.reverseStartTime) / 1000;
+    state.reverseTooSlow = reverseTime > 20;
+    state.reverseTooFast = state.reverseMaxSpeed > 15;
+    state.honkPenalty = state.honkCount < 2;
+
+    state.smoothnessScore = Math.max(0, 100 - state.jerkAccum * 2);
+
+    state.phase = PHASE.RESULTS;
+    showResults();
+  }
+}
+
+// --- RESULTS ---
+function showResults() {
+  const el = document.getElementById('message-box');
+  const s = state;
+
+  let totalScore = 0;
+  let breakdown = '';
+  const onMark = s.markAccuracy >= 0;
+  const pass = s.markAccuracy > 0;
+
+  // Mark accuracy (max 40 pts)
+  const markPts = Math.round(s.markAccuracy * 0.4);
+  totalScore += markPts;
+  breakdown += `<div>Mark Accuracy: ${s.markAccuracy.toFixed(1)}% → <b>${markPts}/40 pts</b>${s.markAccuracy <= 0 ? ' <span class="penalty">MISSED!</span>' : ''}</div>`;
+
+  // Return accuracy (max 20 pts)
+  const retPts = Math.round(s.reverseAccuracy * 0.2);
+  totalScore += retPts;
+  breakdown += `<div>Return to One: ${s.reverseAccuracy.toFixed(1)}% → <b>${retPts}/20 pts</b></div>`;
+
+  // Penalties
+  let penalties = 0;
+  let penaltyText = '';
+  if (s.honkPenalty) { penalties += 10; penaltyText += '<div class="penalty">-10: Failed to honk twice before reversing</div>'; }
+  if (s.reverseTooSlow) { penalties += 10; penaltyText += '<div class="penalty">-10: Took too long to reverse back</div>'; }
+  if (s.reverseTooFast) { penalties += 10; penaltyText += `<div class="penalty">-10: Reversed too fast (${s.reverseMaxSpeed.toFixed(1)} mph)</div>`; }
+
+  // Mode bonus (max 40 pts)
+  let modePts = 0;
+  let modeText = '';
+  switch(s.mode) {
+    case 'speed':
+      modePts = Math.max(0, Math.round(40 - s.takeTime * 1.5));
+      modeText = `Speed Bonus (${s.takeTime.toFixed(1)}s): <b>${modePts}/40 pts</b>`;
+      break;
+    case 'smooth':
+      modePts = Math.round(s.smoothnessScore * 0.4);
+      modeText = `Smoothness: ${s.smoothnessScore.toFixed(0)}% → <b>${modePts}/40 pts</b>`;
+      break;
+    case 'exactmph':
+      modePts = Math.round((s.exactMPHAccuracy || 0) * 0.4);
+      modeText = `Exact MPH (target ${s.targetMPH}, hit ${s.speedAtCheckpoint.toFixed(1)}): <b>${modePts}/40 pts</b>`;
+      break;
+    default:
+      // Standard: blend of time and smoothness
+      const timePts = Math.max(0, Math.round(20 - s.takeTime * 0.8));
+      const smoothPts = Math.round(s.smoothnessScore * 0.2);
+      modePts = timePts + smoothPts;
+      modeText = `Performance: <b>${modePts}/40 pts</b>`;
+  }
+  totalScore += modePts;
+  breakdown += `<div>${modeText}</div>`;
+  totalScore -= penalties;
+  totalScore = Math.max(0, totalScore);
+
+  let grade = 'F';
+  if (totalScore >= 90) grade = 'A+';
+  else if (totalScore >= 80) grade = 'A';
+  else if (totalScore >= 70) grade = 'B';
+  else if (totalScore >= 60) grade = 'C';
+  else if (totalScore >= 40) grade = 'D';
+
+  el.innerHTML = `
+    <h2>TAKE COMPLETE</h2>
+    <div class="score">${totalScore}/100 — Grade: ${grade}</div>
+    <div style="text-align:left; margin:15px 0; font-size:14px; line-height:1.8">
+      ${breakdown}
+      ${penaltyText}
+    </div>
+    <div style="font-size:13px; color:#888; margin-bottom:10px">
+      Top Speed: ${s.maxSpeedHit.toFixed(1)} mph &nbsp;|&nbsp; Time: ${s.takeTime.toFixed(1)}s &nbsp;|&nbsp; Mark: ${s.markDistance.toFixed(0)} ft
+    </div>
+    <button onclick="showMenu()">Back to Menu</button>
+  `;
+  el.style.display = 'block';
+  document.getElementById('controls-help').innerHTML = '';
+}
+window.showMenu = showMenu;
+
+// ============================================================
+// RENDERING
+// ============================================================
+
+function drawSky(ctx) {
+  const grad = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+  grad.addColorStop(0, '#4a90d9');
+  grad.addColorStop(1, '#87ceeb');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H * 0.4);
+
+  // Clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  const cloudY = 60;
+  [[100,cloudY,80],[350,cloudY+20,60],[700,cloudY-10,90],[950,cloudY+30,50]].forEach(([x,y,r]) => {
+    ctx.beginPath();
+    ctx.ellipse(x,y,r,r*0.4,0,0,Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawRoad(ctx) {
+  const horizonY = H * 0.38;
+  const vanishX = W / 2 + state.posX * -200;
+
+  // Ground
+  const groundGrad = ctx.createLinearGradient(0, horizonY, 0, H);
+  groundGrad.addColorStop(0, '#4a7a3a');
+  groundGrad.addColorStop(0.1, '#5a8a4a');
+  groundGrad.addColorStop(1, '#3a6a2a');
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, horizonY, W, H - horizonY);
+
+  // Road surface with perspective
+  const roadTopW = 180;
+  const roadBotW = 900;
+  ctx.fillStyle = '#444';
+  ctx.beginPath();
+  ctx.moveTo(vanishX - roadTopW/2, horizonY);
+  ctx.lineTo(vanishX + roadTopW/2, horizonY);
+  ctx.lineTo(W/2 + roadBotW/2 + state.posX * -50, H);
+  ctx.lineTo(W/2 - roadBotW/2 + state.posX * -50, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lane markings (dashed center line)
+  ctx.strokeStyle = '#ff0';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([15, 20]);
+  const dashOffset = (state.roadOffset * 3) % 35;
+  ctx.lineDashOffset = -dashOffset;
+  ctx.beginPath();
+  ctx.moveTo(vanishX, horizonY);
+  ctx.lineTo(W/2 + state.posX * -50, H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Road edges
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(vanishX - roadTopW/2, horizonY);
+  ctx.lineTo(W/2 - roadBotW/2 + state.posX * -50, H);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(vanishX + roadTopW/2, horizonY);
+  ctx.lineTo(W/2 + roadBotW/2 + state.posX * -50, H);
+  ctx.stroke();
+
+  // THE MARK - red tape on road
+  if (state.phase === PHASE.DRIVING_TO_MARK || state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+    const distToMark = state.markDistance - state.posY;
+    if (distToMark > -10 && distToMark < 300) {
+      const t = Math.max(0.01, distToMark / 300);
+      const markY = horizonY + (H - horizonY) * (1 - t);
+      const markW = roadTopW + (roadBotW - roadTopW) * (1 - t);
+      const markCX = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
+
+      ctx.fillStyle = distToMark < state.markDistance * 0.05 ? '#ff4444' : '#ff6666';
+      ctx.globalAlpha = Math.min(1, 1 / t);
+      ctx.fillRect(markCX - markW/2, markY - 2/t, markW, 4/t);
+      ctx.globalAlpha = 1;
+
+      // "MARK" label
+      if (t > 0.05 && t < 0.8) {
+        ctx.fillStyle = '#ff0';
+        ctx.font = `${Math.round(14/t)}px bold sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('MARK', markCX, markY - 8/t);
+      }
+    }
+  }
+
+  // Start mark (one) - for reversing
+  if (state.phase === PHASE.REVERSING) {
+    const distToStart = -state.posY;  // since we're reversing, posY > 0, start is at 0
+    const distBehind = state.posY;    // how far behind us
+    // Show it ahead (since we're looking backward effectively... we'll show it on road approaching)
+    const t = Math.max(0.01, distBehind / 300);
+    if (distBehind > 0 && distBehind < 300) {
+      const markY = horizonY + (H - horizonY) * (1 - t);
+      const markW = roadTopW + (roadBotW - roadTopW) * (1 - t);
+      const markCX = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
+      ctx.fillStyle = '#44ff44';
+      ctx.globalAlpha = Math.min(1, 1 / t);
+      ctx.fillRect(markCX - markW/2, markY - 2/t, markW, 4/t);
+      ctx.globalAlpha = 1;
+
+      if (t > 0.05 && t < 0.8) {
+        ctx.fillStyle = '#0f0';
+        ctx.font = `${Math.round(14/t)}px bold sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('ONE', markCX, markY - 8/t);
+      }
+    }
+  }
+}
+
+function drawBTSCrew(ctx) {
+  const horizonY = H * 0.38;
+  const vanishX = W / 2 + state.posX * -200;
+
+  // BTS crew members along the sides of the road
+  const crewPositions = [
+    { side: -1, dist: 80, type: 'grip' },
+    { side: 1, dist: 80, type: 'camera' },
+    { side: -1, dist: 150, type: 'director' },
+    { side: 1, dist: 160, type: 'grip' },
+    { side: -1, dist: 220, type: 'sound' },
+    { side: 1, dist: 250, type: 'camera' },
+    { side: -1, dist: 50, type: 'pa' },
+    { side: 1, dist: 40, type: 'safety' },
+  ];
+
+  crewPositions.forEach(crew => {
+    const distFromCar = crew.dist - state.posY;
+    if (distFromCar < -20 || distFromCar > 300) return;
+
+    const t = Math.max(0.02, distFromCar / 300);
+    const roadTopW = 180;
+    const roadBotW = 900;
+    const roadW = roadTopW + (roadBotW - roadTopW) * (1 - t);
+    const cx = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
+    const y = horizonY + (H - horizonY) * (1 - t);
+    const x = cx + crew.side * (roadW/2 + 30/t);
+    const scale = 1/t * 0.15;
+
+    if (scale < 0.5 || scale > 8) return;
+
+    // Simple person figure
+    const h = 40 * scale;
+    const headR = 5 * scale;
+
+    // Body color by type
+    const colors = {
+      grip: '#555', camera: '#333', director: '#803020',
+      sound: '#305080', pa: '#508030', safety: '#ff8800'
+    };
+    ctx.fillStyle = colors[crew.type] || '#555';
+
+    // Body
+    ctx.fillRect(x - 4*scale, y - h + headR*2, 8*scale, h - headR*2);
+    // Head
+    ctx.beginPath();
+    ctx.arc(x, y - h, headR, 0, Math.PI*2);
+    ctx.fillStyle = '#ddb89a';
+    ctx.fill();
+
+    // Camera on tripod for camera crew
+    if (crew.type === 'camera') {
+      ctx.fillStyle = '#222';
+      ctx.fillRect(x + 6*scale, y - h + 10*scale, 12*scale, 8*scale);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = scale;
+      ctx.beginPath();
+      ctx.moveTo(x + 12*scale, y - h + 18*scale);
+      ctx.lineTo(x + 6*scale, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 12*scale, y - h + 18*scale);
+      ctx.lineTo(x + 18*scale, y);
+      ctx.stroke();
+    }
+
+    // Director's chair
+    if (crew.type === 'director') {
+      ctx.fillStyle = '#8B4513';
+      ctx.fillRect(x - 12*scale, y - 15*scale, 10*scale, 15*scale);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${Math.max(6, 6*scale)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('DIR', x - 7*scale, y - 6*scale);
+    }
+
+    // Safety vest marking
+    if (crew.type === 'safety') {
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 2 * scale;
+      ctx.strokeRect(x - 4*scale, y - h + headR*2 + 3*scale, 8*scale, 10*scale);
+    }
+  });
+}
+
+function drawDashboard(ctx) {
+  const dashY = H * 0.6;
+
+  // Dashboard base
+  const dashGrad = ctx.createLinearGradient(0, dashY, 0, H);
+  dashGrad.addColorStop(0, '#2a2a2a');
+  dashGrad.addColorStop(0.3, '#1a1a1a');
+  dashGrad.addColorStop(1, '#111');
+  ctx.fillStyle = dashGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, dashY + 40);
+  ctx.quadraticCurveTo(W/2, dashY - 20, W, dashY + 40);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Dashboard top trim
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, dashY + 40);
+  ctx.quadraticCurveTo(W/2, dashY - 20, W, dashY + 40);
+  ctx.stroke();
+
+  // Vents
+  [W*0.2, W*0.8].forEach(vx => {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(vx - 30, dashY + 15, 60, 20);
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(vx - 28, dashY + 18 + i*4);
+      ctx.lineTo(vx + 28, dashY + 18 + i*4);
+      ctx.stroke();
+    }
+  });
+
+  // Instrument cluster background
+  ctx.fillStyle = '#0a0a0a';
+  ctx.beginPath();
+  ctx.ellipse(W/2, dashY + 20, 150, 50, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Speedometer
+  drawSpeedometer(ctx, W/2, dashY + 20);
+
+  // Gear indicator
+  ctx.fillStyle = state.gear === 'R' ? '#ff4444' : '#44ff44';
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.gear, W/2 + 80, dashY + 30);
+
+  // Distance indicator
+  ctx.fillStyle = '#0af';
+  ctx.font = '12px monospace';
+  ctx.fillText(`${state.posY.toFixed(1)} ft`, W/2 - 80, dashY + 30);
+}
+
+function drawSpeedometer(ctx, cx, cy) {
+  // Speedometer arc
+  const radius = 38;
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, Math.PI * 0.8, Math.PI * 2.2);
+  ctx.stroke();
+
+  // Speed marks
+  for (let mph = 0; mph <= 60; mph += 10) {
+    const angle = Math.PI * 0.8 + (mph / 60) * Math.PI * 1.4;
+    const inner = radius - 8;
+    const outer = radius - 2;
+    ctx.strokeStyle = mph <= Math.abs(state.speed) ? '#0f0' : '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+    ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+    ctx.stroke();
+
+    ctx.fillStyle = '#888';
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(mph, cx + Math.cos(angle) * (inner - 8), cy + Math.sin(angle) * (inner - 8) + 3);
+  }
+
+  // Needle
+  const speedAngle = Math.PI * 0.8 + (Math.min(60, Math.abs(state.speed)) / 60) * Math.PI * 1.4;
+  ctx.strokeStyle = '#f00';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(speedAngle) * (radius - 5), cy + Math.sin(speedAngle) * (radius - 5));
+  ctx.stroke();
+
+  // Digital speed
+  ctx.fillStyle = '#0f0';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.abs(state.speed).toFixed(0)} MPH`, cx, cy + 18);
+}
+
+function drawSteeringWheel(ctx) {
+  const cx = W / 2;
+  const cy = H - 80;
+  const r = 130;
+  const angle = state.wheelAngle * Math.PI / 180;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  // Wheel rim
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 18;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Leather texture
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 14;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Spokes
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 10;
+  // Left spoke
+  ctx.beginPath();
+  ctx.moveTo(-r, 0);
+  ctx.lineTo(-30, 0);
+  ctx.stroke();
+  // Right spoke
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(30, 0);
+  ctx.stroke();
+  // Bottom spoke
+  ctx.beginPath();
+  ctx.moveTo(0, r);
+  ctx.lineTo(0, 20);
+  ctx.stroke();
+
+  // Center hub
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Horn button area
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.arc(0, 0, 18, 0, Math.PI*2);
+  ctx.fill();
+
+  // Horn icon
+  ctx.fillStyle = '#666';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HORN', 0, 0);
+
+  ctx.restore();
+}
+
+function drawHands(ctx) {
+  const cx = W / 2;
+  const cy = H - 80;
+  const r = 130;
+  const angle = state.wheelAngle * Math.PI / 180;
+
+  // Left hand at 9 o'clock
+  const lx = cx + Math.cos(Math.PI + angle) * r;
+  const ly = cy + Math.sin(Math.PI + angle) * r;
+
+  // Right hand at 3 o'clock
+  const rx = cx + Math.cos(0 + angle) * r;
+  const ry = cy + Math.sin(0 + angle) * r;
+
+  [{ x: lx, y: ly, flip: false }, { x: rx, y: ry, flip: true }].forEach(hand => {
+    ctx.save();
+    ctx.translate(hand.x, hand.y);
+    ctx.rotate(angle + (hand.flip ? 0 : Math.PI));
+
+    // Wrist / forearm
+    ctx.fillStyle = '#ddb89a';
+    ctx.fillRect(-8, -5, 40, 18);
+
+    // Palm
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 14, 12, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#ddb89a';
+    ctx.fill();
+
+    // Fingers wrapped
+    ctx.fillStyle = '#ccaa88';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.ellipse(i * 6, -8, 4, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Thumb
+    ctx.beginPath();
+    ctx.ellipse(10, 10, 5, 4, 0.3, 0, Math.PI*2);
+    ctx.fillStyle = '#ddb89a';
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+function drawSideWindows(ctx) {
+  // Left window frame
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.15);
+  ctx.lineTo(80, H * 0.08);
+  ctx.lineTo(80, H * 0.65);
+  ctx.lineTo(0, H * 0.7);
+  ctx.closePath();
+  ctx.fill();
+
+  // Left window glass
+  ctx.fillStyle = 'rgba(135,206,235,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(5, H * 0.17);
+  ctx.lineTo(75, H * 0.1);
+  ctx.lineTo(75, H * 0.6);
+  ctx.lineTo(5, H * 0.65);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right window frame
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.moveTo(W, H * 0.15);
+  ctx.lineTo(W - 80, H * 0.08);
+  ctx.lineTo(W - 80, H * 0.65);
+  ctx.lineTo(W, H * 0.7);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right window glass
+  ctx.fillStyle = 'rgba(135,206,235,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(W - 5, H * 0.17);
+  ctx.lineTo(W - 75, H * 0.1);
+  ctx.lineTo(W - 75, H * 0.6);
+  ctx.lineTo(W - 5, H * 0.65);
+  ctx.closePath();
+  ctx.fill();
+
+  // A-pillars
+  ctx.fillStyle = '#222';
+  ctx.fillRect(78, H * 0.05, 12, H * 0.6);
+  ctx.fillRect(W - 90, H * 0.05, 12, H * 0.6);
+}
+
+function drawRearviewMirror(ctx) {
+  const mx = W / 2;
+  const my = H * 0.08;
+  const mw = 140;
+  const mh = 50;
+
+  // Mirror housing
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.ellipse(mx, my, mw/2 + 5, mh/2 + 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Mirror surface
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(mx, my, mw/2, mh/2, 0, 0, Math.PI*2);
+  ctx.clip();
+
+  // Mirror reflection - reversed road view
+  const mirrorGrad = ctx.createLinearGradient(mx - mw/2, my - mh/2, mx + mw/2, my + mh/2);
+  mirrorGrad.addColorStop(0, '#5a8aaa');
+  mirrorGrad.addColorStop(0.5, '#667');
+  mirrorGrad.addColorStop(1, '#445');
+  ctx.fillStyle = mirrorGrad;
+  ctx.fillRect(mx - mw/2, my - mh/2, mw, mh);
+
+  // Road in mirror
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.moveTo(mx - 10, my - 5);
+  ctx.lineTo(mx + 10, my - 5);
+  ctx.lineTo(mx + 40, my + mh/2);
+  ctx.lineTo(mx - 40, my + mh/2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+
+  // Mirror mount
+  ctx.fillStyle = '#333';
+  ctx.fillRect(mx - 3, my + mh/2, 6, 15);
+
+  // Stalk
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(mx, my + mh/2 + 15);
+  ctx.lineTo(mx, my + mh/2 + 30);
+  ctx.stroke();
+}
+
+function drawPIPCamera(ctx) {
+  if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
+
+  const px = W - 220;
+  const py = 10;
+  const pw = 210;
+  const ph = 140;
+
+  // PIP border
+  ctx.fillStyle = '#000';
+  ctx.fillRect(px - 3, py - 3, pw + 6, ph + 6);
+  ctx.strokeStyle = '#f00';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px - 3, py - 3, pw + 6, ph + 6);
+
+  // "REC" indicator
+  ctx.fillStyle = '#f00';
+  ctx.beginPath();
+  ctx.arc(px + 15, py + 15, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('REC', px + 24, py + 19);
+
+  // Camera name
+  ctx.fillStyle = '#ccc';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('CAM A - WIDE', px + pw - 5, py + 18);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(px, py, pw, ph);
+  ctx.clip();
+
+  // Simplified wide-angle view of the car approaching
+  // Sky
+  const skyGrad = ctx.createLinearGradient(px, py, px, py + ph * 0.35);
+  skyGrad.addColorStop(0, '#4a90d9');
+  skyGrad.addColorStop(1, '#87ceeb');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(px, py, pw, ph * 0.35);
+
+  // Ground
+  ctx.fillStyle = '#5a8a4a';
+  ctx.fillRect(px, py + ph * 0.35, pw, ph * 0.65);
+
+  // Road from camera perspective
+  const rcx = px + pw * 0.5;
+  const roadY = py + ph * 0.35;
+  ctx.fillStyle = '#444';
+  ctx.beginPath();
+  ctx.moveTo(rcx - 15, roadY);
+  ctx.lineTo(rcx + 15, roadY);
+  ctx.lineTo(rcx + 80, py + ph);
+  ctx.lineTo(rcx - 80, py + ph);
+  ctx.closePath();
+  ctx.fill();
+
+  // Car in camera view (getting closer as posY increases)
+  const carDist = Math.max(0.1, 1 - state.posY / state.markDistance);
+  const carScale = Math.min(3, 0.3 + (1 - carDist) * 2);
+  const carCY = roadY + (py + ph - roadY) * (1 - carDist * 0.8);
+  const carCX = rcx + state.posX * 20 * carScale;
+
+  // Car shape in PIP
+  ctx.fillStyle = '#1a1a5a';
+  const cw = 16 * carScale;
+  const ch = 10 * carScale;
+  ctx.fillRect(carCX - cw/2, carCY - ch, cw, ch);
+  // Windshield
+  ctx.fillStyle = 'rgba(135,206,235,0.5)';
+  ctx.fillRect(carCX - cw*0.35, carCY - ch + 1, cw*0.7, ch*0.35);
+
+  // The mark in camera view
+  const markInView = py + ph * 0.7;
+  ctx.fillStyle = '#f44';
+  ctx.fillRect(rcx - 60, markInView, 120, 2);
+
+  // Timecode
+  const tc = ((performance.now() - state.takeStartTime) / 1000);
+  const mm = Math.floor(tc / 60).toString().padStart(2, '0');
+  const ss = Math.floor(tc % 60).toString().padStart(2, '0');
+  const ff = Math.floor((tc % 1) * 24).toString().padStart(2, '0');
+  ctx.fillStyle = '#fff';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${mm}:${ss}:${ff}`, px + pw/2, py + ph - 5);
+
+  ctx.restore();
+}
+
+function drawHUD(ctx) {
+  if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
+
+  const el = document.getElementById('hud');
+  const distToMark = state.markDistance - state.posY;
+  let hudText = '';
+
+  hudText += `<div style="font-size:16px;color:#f90;font-weight:bold">${state.mode.toUpperCase()} TAKE</div>`;
+
+  if (state.phase === PHASE.DRIVING_TO_MARK) {
+    hudText += `<div>Distance to Mark: <b style="color:${distToMark < 20 ? '#f44' : '#0f0'}">${distToMark.toFixed(1)} ft</b></div>`;
+    if (state.mode === 'exactmph') {
+      hudText += `<div>Target: <b style="color:#ff0">${state.targetMPH} MPH</b> at checkpoint</div>`;
+      if (!state.checkpointPassed) {
+        const distToCP = state.checkpointDistance - state.posY;
+        hudText += `<div>Checkpoint in: ${distToCP.toFixed(0)} ft</div>`;
+      } else {
+        hudText += `<div style="color:#0f0">Checkpoint: ${state.speedAtCheckpoint.toFixed(1)} MPH ✓</div>`;
+      }
+    }
+  } else if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+    hudText += `<div style="color:#ff0;font-size:18px">ON MARK! Accuracy: ${state.markAccuracy.toFixed(1)}%</div>`;
+    hudText += `<div>Honk horn TWICE (Space) to begin reverse</div>`;
+    hudText += `<div>Honks: ${state.honkCount}/2</div>`;
+  } else if (state.phase === PHASE.REVERSING) {
+    hudText += `<div style="color:#f44">REVERSING TO ONE</div>`;
+    hudText += `<div>Distance to Start: <b>${state.posY.toFixed(1)} ft</b></div>`;
+    const elapsed = (performance.now() - state.reverseStartTime) / 1000;
+    hudText += `<div>Time: ${elapsed.toFixed(1)}s ${elapsed > 15 ? '<span style="color:#f44">HURRY!</span>' : ''}</div>`;
+  }
+
+  el.innerHTML = hudText;
+}
+
+// --- MAIN LOOP ---
+let lastTime = 0;
+
+function gameLoop(timestamp) {
+  const dt = Math.min(0.05, (timestamp - lastTime) / 1000);
+  lastTime = timestamp;
+
+  updatePhysics(dt);
+
+  // Clear
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw scene layers
+  drawSky(ctx);
+  drawRoad(ctx);
+  drawBTSCrew(ctx);
+  drawSideWindows(ctx);
+  drawRearviewMirror(ctx);
+  drawDashboard(ctx);
+  drawSteeringWheel(ctx);
+  drawHands(ctx);
+  drawPIPCamera(ctx);
+  drawHUD(ctx);
+
+  // Windshield tint overlay
+  ctx.fillStyle = 'rgba(200,230,255,0.03)';
+  ctx.fillRect(80, 0, W - 160, H * 0.6);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Start
+showMenu();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
