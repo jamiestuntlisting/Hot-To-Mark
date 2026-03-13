@@ -109,6 +109,11 @@ namespace HotToMark.Core
             audioRoot.AddComponent<AudioSource>();
             var engineAudio = audioRoot.AddComponent<EngineAudioController>();
 
+            // Ambient film set audio generator (procedural)
+            var ambientObj = new GameObject("AmbientAudio");
+            ambientObj.transform.SetParent(audioRoot.transform);
+            ambientObj.AddComponent<AmbientAudioGenerator>();
+
             // ---- Haptics (Stage 8) ----
             var hapticObj = new GameObject("Haptics");
             var haptics = hapticObj.AddComponent<HapticFeedback>();
@@ -138,6 +143,22 @@ namespace HotToMark.Core
             gm.haptics = haptics;
             gm.crewManager = crewManager;
             gm.pipCamera = pipController;
+
+            // ---- Procedural Speedometer Dial (Stage 2) ----
+            var speedoDialObj = new GameObject("SpeedometerDial");
+            speedoDialObj.transform.SetParent(cockpitObj.transform);
+            speedoDialObj.transform.localPosition = new Vector3(0, 0.62f, 0.65f);
+            speedoDialObj.transform.localScale = Vector3.one * 0.8f;
+            var speedoBuilder = speedoDialObj.AddComponent<SpeedometerBuilder>();
+            speedoBuilder.Build();
+
+            // ---- Visual Polish (Stage 8) ----
+            var polishObj = new GameObject("VisualPolish");
+            polishObj.AddComponent<VisualPolish>();
+
+            // ---- Performance Optimizer (Stage 8) ----
+            var perfObj = new GameObject("PerformanceOptimizer");
+            perfObj.AddComponent<PerformanceOptimizer>();
 
             // ---- Skybox ----
             SetupSkybox();
