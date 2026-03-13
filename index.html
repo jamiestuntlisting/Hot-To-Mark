@@ -128,20 +128,28 @@ function getAudioCtx() {
   return audioCtx;
 }
 
+// -- Horn (8.3: realistic car horn, dual-tone) --
 function playHorn() {
   try {
     const ac = getAudioCtx();
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.connect(gain); gain.connect(ac.destination);
-    osc.frequency.value = 380;
-    osc.type = 'square';
-    gain.gain.setValueAtTime(0.13, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35);
-    osc.start(); osc.stop(ac.currentTime + 0.35);
-  } catch (e) { /* silent fail */ }
+    const t = ac.currentTime;
+    // Dual-tone horn for realism
+    [380, 507].forEach(freq => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.frequency.value = freq;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.linearRampToValueAtTime(0.10, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.start(t); osc.stop(t + 0.4);
+    });
+    triggerHaptic('horn');
+  } catch (e) {}
 }
 
+// -- Tire screech (8.2) --
 function playTireScreech(intensity) {
   try {
     const ac = getAudioCtx();
@@ -158,14 +166,18 @@ function playTireScreech(intensity) {
     gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.25);
     src.connect(bp); bp.connect(gain); gain.connect(ac.destination);
     src.start(); src.stop(ac.currentTime + 0.25);
+    triggerHaptic('brake');
   } catch (e) {}
 }
 
-// Continuous engine drone
+// -- Engine audio (8.1: RPM-based idle, accel, decel) --
 let engineOsc = null, engineGain = null;
+let engineOsc2 = null, engineGain2 = null; // second harmonic for richness
+let engineNoise = null, engineNoiseGain = null; // exhaust rumble
 function initEngineSound() {
   try {
     const ac = getAudioCtx();
+    // Primary oscillator (fundamental)
     engineOsc = ac.createOscillator();
     engineGain = ac.createGain();
     engineOsc.type = 'sawtooth';
@@ -173,16 +185,119 @@ function initEngineSound() {
     engineGain.gain.value = 0;
     engineOsc.connect(engineGain); engineGain.connect(ac.destination);
     engineOsc.start();
+
+    // Second harmonic
+    engineOsc2 = ac.createOscillator();
+    engineGain2 = ac.createGain();
+    engineOsc2.type = 'triangle';
+    engineOsc2.frequency.value = 110;
+    engineGain2.gain.value = 0;
+    engineOsc2.connect(engineGain2); engineGain2.connect(ac.destination);
+    engineOsc2.start();
+
+    // Exhaust noise layer
+    const bufSize = ac.sampleRate * 2;
+    const noiseBuf = ac.createBuffer(1, bufSize, ac.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) noiseData[i] = (Math.random() * 2 - 1);
+    engineNoise = ac.createBufferSource();
+    engineNoise.buffer = noiseBuf;
+    engineNoise.loop = true;
+    engineNoiseGain = ac.createGain();
+    engineNoiseGain.gain.value = 0;
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 200;
+    engineNoise.connect(lp); lp.connect(engineNoiseGain); engineNoiseGain.connect(ac.destination);
+    engineNoise.start();
   } catch (e) {}
 }
 function updateEngineSound(speed, throttle) {
   if (!engineOsc) return;
-  const rpm = 55 + Math.abs(speed) * 3 + throttle * 20;
+  const absSpeed = Math.abs(speed);
+  // RPM simulation: idle at ~55Hz, rev up with speed and throttle
+  const idleRPM = 55;
+  const speedRPM = absSpeed * 3.2;
+  const throttleRPM = throttle * 25;
+  const rpm = idleRPM + speedRPM + throttleRPM;
+
   engineOsc.frequency.value = rpm;
-  engineGain.gain.value = Math.min(0.04, 0.008 + Math.abs(speed) * 0.0005 + throttle * 0.015);
+  engineOsc2.frequency.value = rpm * 2.01; // slight detune for richness
+
+  // Volume: idle hum + throttle response + speed contribution
+  const idleVol = 0.006;
+  const throttleVol = throttle * 0.018;
+  const speedVol = absSpeed * 0.0004;
+  const vol = Math.min(0.05, idleVol + throttleVol + speedVol);
+  engineGain.gain.value = vol;
+  engineGain2.gain.value = vol * 0.3;
+  if (engineNoiseGain) engineNoiseGain.gain.value = vol * 0.4;
+
+  // Haptic engine vibration
+  if (absSpeed > 5 || throttle > 0) triggerHaptic('engine');
 }
 function stopEngineSound() {
   if (engineGain) engineGain.gain.value = 0;
+  if (engineGain2) engineGain2.gain.value = 0;
+  if (engineNoiseGain) engineNoiseGain.gain.value = 0;
+}
+
+// -- Voice calls (8.5 "Action!", 8.6 "Cut!") via speech synthesis --
+function speakVoice(text, pitch, rate) {
+  try {
+    if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.pitch = pitch || 1.0;
+      u.rate = rate || 1.1;
+      u.volume = 0.7;
+      speechSynthesis.speak(u);
+    }
+  } catch (e) {}
+}
+function callAction() { speakVoice('Action!', 1.2, 1.0); }
+function callCut() { speakVoice('Cut!', 1.1, 0.9); }
+
+// -- Ambient film set audio (8.4: walkie chatter, crew sounds) --
+let ambientNode = null, ambientGainNode = null;
+function startAmbientAudio() {
+  try {
+    const ac = getAudioCtx();
+    // Create looping crackly walkie-talkie ambient
+    const bufSize = ac.sampleRate * 3;
+    const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      // Intermittent crackle bursts to simulate walkie chatter
+      const burst = Math.sin(i / (ac.sampleRate * 0.4)) > 0.7 ? 1 : 0;
+      data[i] = (Math.random() * 2 - 1) * 0.02 * burst;
+    }
+    ambientNode = ac.createBufferSource();
+    ambientNode.buffer = buf;
+    ambientNode.loop = true;
+    ambientGainNode = ac.createGain();
+    ambientGainNode.gain.value = 0.15;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 5;
+    ambientNode.connect(bp); bp.connect(ambientGainNode); ambientGainNode.connect(ac.destination);
+    ambientNode.start();
+  } catch (e) {}
+}
+function stopAmbientAudio() {
+  try {
+    if (ambientNode) { ambientNode.stop(); ambientNode = null; }
+  } catch (e) {}
+}
+
+// -- Haptic feedback (8.7: engine vibration, brake pulse, horn tap) --
+function triggerHaptic(type) {
+  try {
+    if (!navigator.vibrate) return;
+    switch (type) {
+      case 'horn': navigator.vibrate(80); break;
+      case 'brake': navigator.vibrate([30, 10, 30]); break;
+      case 'engine': navigator.vibrate(8); break;
+      case 'mark': navigator.vibrate([50, 30, 50, 30, 50]); break;
+    }
+  } catch (e) {}
 }
 
 // ----------------------------------------------------------------
