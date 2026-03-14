@@ -29,6 +29,7 @@ namespace HotToMark.Core
         public HapticFeedback haptics;
         public CrewManager crewManager;
         public PIPCameraController pipCamera;
+        public PauseMenuUI pauseMenu;
 
         public static GameManager Instance { get; private set; }
 
@@ -57,6 +58,7 @@ namespace HotToMark.Core
             if (resultsScreen != null) resultsScreen.Hide();
             if (hud != null) hud.Hide();
             if (pipCamera != null) pipCamera.SetActive(false);
+            if (pauseMenu != null) pauseMenu.Hide();
         }
 
         public void StartGame(GameMode mode)
@@ -76,6 +78,8 @@ namespace HotToMark.Core
             if (markSystem != null) markSystem.SetupMark(state.markDistance);
             if (engineAudio != null) engineAudio.StartEngine();
             if (crewManager != null) crewManager.SpawnCrew();
+            if (hornSystem != null) hornSystem.ResetHorn();
+            if (pauseMenu != null) pauseMenu.Hide();
 
             // "Action!" voice call (Stage 8.5)
             if (engineAudio != null) engineAudio.PlayVoiceAction();
@@ -119,7 +123,10 @@ namespace HotToMark.Core
             state.reverseTooSlow = reverseTime > GameState.PENALTY_SLOW_TIME;
             state.reverseTooFast = state.reverseMaxSpeed > GameState.PENALTY_FAST_MPH;
             state.honkPenalty = state.honkCount < GameState.HONKS_REQUIRED;
-            state.smoothnessScore = Mathf.Max(0, 100f - state.jerkAccum * 2f);
+
+            // Smoothness: scale jerk accumulation so typical play scores well
+            // Average take accumulates ~20-60 jerk units; map to 0-100
+            state.smoothnessScore = Mathf.Clamp(100f - state.jerkAccum * 1.2f, 0f, 100f);
 
             state.phase = GamePhase.Results;
 
@@ -127,8 +134,54 @@ namespace HotToMark.Core
             if (hud != null) hud.Hide();
             if (pipCamera != null) pipCamera.SetActive(false);
 
-            ScoreResult result = scoreManager.CalculateScore(state);
-            if (resultsScreen != null) resultsScreen.Show(result, state);
+            if (scoreManager != null)
+            {
+                ScoreResult result = scoreManager.CalculateScore(state);
+
+                // Save high score
+                HighScoreManager.SaveScore(state.mode, result.totalScore);
+
+                if (resultsScreen != null) resultsScreen.Show(result, state);
+            }
+        }
+
+        // ---- Pause System ----
+
+        public void TogglePause()
+        {
+            if (state.phase == GamePhase.Paused)
+                ResumeGame();
+            else if (state.phase != GamePhase.Menu && state.phase != GamePhase.Results)
+                PauseGame();
+        }
+
+        public void PauseGame()
+        {
+            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
+                || state.phase == GamePhase.Paused)
+                return;
+
+            state.phaseBeforePause = state.phase;
+            state.phase = GamePhase.Paused;
+            Time.timeScale = 0;
+
+            if (pauseMenu != null) pauseMenu.Show();
+        }
+
+        public void ResumeGame()
+        {
+            if (state.phase != GamePhase.Paused) return;
+
+            state.phase = state.phaseBeforePause;
+            Time.timeScale = 1;
+
+            if (pauseMenu != null) pauseMenu.Hide();
+        }
+
+        public void QuitToMenu()
+        {
+            Time.timeScale = 1;
+            ShowMenu();
         }
     }
 }

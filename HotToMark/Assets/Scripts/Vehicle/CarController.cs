@@ -22,6 +22,10 @@ namespace HotToMark.Vehicle
         private bool initialized;
         private const float MPH_TO_FPS = 1.467f; // mph to feet/s
 
+        // Road edge rumble
+        private float edgeRumbleTimer;
+        private bool wasAtEdge;
+
         private void EnsureInit()
         {
             if (initialized) return;
@@ -35,7 +39,8 @@ namespace HotToMark.Vehicle
             EnsureInit();
             if (state == null) return;
 
-            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
+            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
+                || state.phase == GamePhase.Paused)
                 return;
 
             float dt = Time.deltaTime;
@@ -58,9 +63,12 @@ namespace HotToMark.Vehicle
 
         private void UpdateSmoothnessTracking(float dt)
         {
+            // Frame-independent jerk accumulation using velocity change
             float throttleJerk = Mathf.Abs(state.throttle - state.lastThrottle);
             float steerJerk = Mathf.Abs(state.steering - state.lastSteering);
-            state.jerkAccum += (throttleJerk + steerJerk * 0.5f) * dt * 60f;
+            // Normalize by dt to make frame-independent, then scale for feel
+            float jerkThisFrame = (throttleJerk + steerJerk * 0.5f);
+            state.jerkAccum += jerkThisFrame;
             state.lastThrottle = state.throttle;
             state.lastSteering = state.steering;
         }
@@ -71,14 +79,22 @@ namespace HotToMark.Vehicle
 
             if (isReverse)
             {
-                state.speed -= state.throttle * accelForce * dt;
-                if (state.speed > 0) state.speed = 0;
-                state.speed += state.brake * brakeForce * dt;
-                if (state.speed > 0) state.speed = 0;
+                // Throttle accelerates in reverse (speed goes negative)
+                state.speed -= state.throttle * accelForce * 0.6f * dt;
 
+                // Brake slows down reverse motion (speed toward zero)
                 if (state.speed < 0)
                 {
-                    state.speed += (Mathf.Abs(state.speed) * dragCoeff + rollingFriction) * dt;
+                    state.speed += state.brake * brakeForce * dt;
+                    if (state.speed > 0) state.speed = 0;
+                }
+
+                // Drag and friction slow reverse toward zero
+                if (state.speed < 0)
+                {
+                    float absSpeed = Mathf.Abs(state.speed);
+                    float dragAmount = (absSpeed * dragCoeff + rollingFriction) * dt;
+                    state.speed += dragAmount; // toward zero
                     if (state.speed > 0) state.speed = 0;
                 }
             }
@@ -103,7 +119,23 @@ namespace HotToMark.Vehicle
             float feetPerSec = state.speed * MPH_TO_FPS;
             state.posY += feetPerSec * dt;
 
-            state.posX += state.steering * Mathf.Abs(state.speed) * lateralSpeedFactor * dt * 60f;
+            float minSpeedForSteering = 0.5f;
+            float effectiveSpeed = Mathf.Max(Mathf.Abs(state.speed), minSpeedForSteering);
+            state.posX += state.steering * effectiveSpeed * lateralSpeedFactor * dt * 60f;
+
+            // Detect road edge
+            bool atEdge = Mathf.Abs(state.posX) >= 0.95f;
+            if (atEdge && !wasAtEdge && Mathf.Abs(state.speed) > 2f)
+            {
+                // Trigger edge rumble feedback
+                var haptics = GameManager.Instance != null ? GameManager.Instance.haptics : null;
+                if (haptics != null) haptics.TriggerRumble();
+
+                var engineAudio = GameManager.Instance != null ? GameManager.Instance.engineAudio : null;
+                if (engineAudio != null) engineAudio.PlayTireScreech();
+            }
+            wasAtEdge = atEdge;
+
             state.posX = Mathf.Clamp(state.posX, -1f, 1f);
 
             Vector3 worldPos = FeetToWorldPosition(state.posY, state.posX);
@@ -128,8 +160,9 @@ namespace HotToMark.Vehicle
             {
                 state.checkpointPassed = true;
                 state.speedAtCheckpoint = state.speed;
-                state.exactMPHAccuracy = Mathf.Max(0,
-                    100f - Mathf.Abs(state.speed - state.targetMPH) * 5f);
+                // Exponential decay for precision — off by 1 MPH = 90%, off by 5 = 28%, off by 10 = 0%
+                float error = Mathf.Abs(state.speed - state.targetMPH);
+                state.exactMPHAccuracy = Mathf.Max(0, 100f * Mathf.Exp(-error * 0.23f));
             }
         }
 
@@ -159,7 +192,11 @@ namespace HotToMark.Vehicle
         {
             if (state.phase != GamePhase.Reversing) return;
 
-            if (state.posY <= GameState.RETURN_TOLERANCE && Mathf.Abs(state.speed) < 0.5f)
+            // Check if stopped near start, or if overshot past start
+            bool nearStart = state.posY <= GameState.RETURN_TOLERANCE && Mathf.Abs(state.speed) < 0.5f;
+            bool overshootStart = state.posY < -GameState.RETURN_TOLERANCE && Mathf.Abs(state.speed) < 0.5f;
+
+            if (nearStart || overshootStart)
             {
                 float returnAccuracy = Mathf.Max(0, 100f - Mathf.Abs(state.posY) * 10f);
                 GameManager.Instance.OnReturnedToOne(returnAccuracy);

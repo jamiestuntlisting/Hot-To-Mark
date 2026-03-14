@@ -9,7 +9,8 @@ namespace HotToMark.Core
         StoppedOnMark,
         Honking,
         Reversing,
-        Results
+        Results,
+        Paused
     }
 
     public enum GameMode
@@ -76,6 +77,9 @@ namespace HotToMark.Core
         public float checkpointDistance;
         public float speedAtCheckpoint;
 
+        [Header("Pause")]
+        public GamePhase phaseBeforePause;
+
         [Header("Constants")]
         public const float MAX_FORWARD_MPH = 60f;
         public const float MAX_REVERSE_MPH = 25f;
@@ -106,6 +110,7 @@ namespace HotToMark.Core
             lastThrottle = 0; lastSteering = 0; jerkAccum = 0; smoothnessScore = 100;
             targetMPH = 0; exactMPHAccuracy = 0; checkpointPassed = false;
             checkpointDistance = 0; speedAtCheckpoint = 0;
+            phaseBeforePause = GamePhase.Menu;
         }
     }
 }

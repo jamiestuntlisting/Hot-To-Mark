@@ -65,26 +65,29 @@ namespace HotToMark.Scoring
             switch (state.mode)
             {
                 case GameMode.SpeedRun:
-                    result.modePoints = Mathf.Max(0,
-                        Mathf.RoundToInt(40f - state.takeTime * 1.5f));
+                    // Bonus curve: sub-10s = 40, 15s = 25, 25s = 5, >27s = 0
+                    float speedBonus = 40f * Mathf.Exp(-state.takeTime * 0.06f) * 2.5f;
+                    result.modePoints = Mathf.Clamp(Mathf.RoundToInt(speedBonus), 0, 40);
                     result.modeLabel = $"Speed Bonus ({state.takeTime:F1}s)";
                     break;
 
                 case GameMode.SmoothOperator:
-                    result.modePoints = Mathf.RoundToInt(state.smoothnessScore * 0.4f);
+                    result.modePoints = Mathf.RoundToInt(
+                        Mathf.Clamp(state.smoothnessScore, 0, 100) * 0.4f);
                     result.modeLabel = $"Smoothness: {state.smoothnessScore:F0}%";
                     break;
 
                 case GameMode.ExactMPH:
-                    result.modePoints = Mathf.RoundToInt(
-                        (state.exactMPHAccuracy > 0 ? state.exactMPHAccuracy : 0) * 0.4f);
+                    float accuracy = Mathf.Max(0, state.exactMPHAccuracy);
+                    result.modePoints = Mathf.RoundToInt(accuracy * 0.4f);
                     result.modeLabel = $"Exact MPH (target {state.targetMPH}, " +
                                        $"hit {state.speedAtCheckpoint:F1})";
                     break;
 
                 default: // Standard
                     int timePts = Mathf.Max(0, Mathf.RoundToInt(20f - state.takeTime * 0.8f));
-                    int smoothPts = Mathf.RoundToInt(state.smoothnessScore * 0.2f);
+                    int smoothPts = Mathf.RoundToInt(
+                        Mathf.Clamp(state.smoothnessScore, 0, 100) * 0.2f);
                     result.modePoints = timePts + smoothPts;
                     result.modeLabel = "Performance (time + smoothness)";
                     break;

@@ -57,6 +57,10 @@ namespace HotToMark.Environment
 
         public void SetupMark(float distanceFeet)
         {
+            // Ensure state is available
+            if (state == null && GameManager.Instance != null)
+                state = GameManager.Instance.state;
+
             float worldZ = distanceFeet * worldScale;
 
             // Position the mark stripe
@@ -84,7 +88,7 @@ namespace HotToMark.Environment
             }
 
             // Checkpoint for Exact MPH
-            if (state.mode == GameMode.ExactMPH)
+            if (state != null && state.mode == GameMode.ExactMPH)
             {
                 float cpZ = state.checkpointDistance * worldScale;
                 if (checkpointStripe != null)
@@ -119,10 +123,10 @@ namespace HotToMark.Environment
             if (oneLabel != null) oneLabel.SetActive(reversing);
 
             // Hide checkpoint after passing
-            if (state.checkpointPassed && checkpointStripe != null)
+            if (state.checkpointPassed)
             {
-                var r = checkpointStripe.GetComponent<Renderer>();
-                if (r != null) r.material.color = new Color(0.3f, 1f, 0.3f, 0.5f);
+                if (checkpointStripe != null) checkpointStripe.SetActive(false);
+                if (checkpointLabel != null) checkpointLabel.SetActive(false);
             }
         }
 
@@ -208,12 +212,15 @@ namespace HotToMark.Environment
     /// </summary>
     public class BillboardLabel : MonoBehaviour
     {
+        private UnityEngine.Camera cachedCam;
+
         void LateUpdate()
         {
-            if (UnityEngine.Camera.main != null)
+            if (cachedCam == null) cachedCam = UnityEngine.Camera.main;
+            if (cachedCam != null)
             {
-                transform.LookAt(UnityEngine.Camera.main.transform);
-                transform.Rotate(0, 180, 0); // flip to face camera
+                transform.LookAt(cachedCam.transform);
+                transform.Rotate(0, 180, 0);
             }
         }
     }

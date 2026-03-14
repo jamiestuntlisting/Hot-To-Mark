@@ -72,6 +72,14 @@ namespace HotToMark.Haptics
             Invoke(nameof(TriggerMedium), 0.25f);
         }
 
+        public void TriggerRumble()
+        {
+            // Road edge rumble
+            TriggerMedium();
+            Invoke(nameof(TriggerLight), 0.08f);
+            Invoke(nameof(TriggerMedium), 0.16f);
+        }
+
         // ---- Platform abstraction ----
 
         private void TriggerLight()

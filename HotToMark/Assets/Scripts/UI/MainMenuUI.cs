@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
+using HotToMark.Scoring;
 
 namespace HotToMark.UI
 {
@@ -109,6 +110,17 @@ namespace HotToMark.UI
                 lastSelectedMode = capturedMode;
                 GameManager.Instance.StartGame(capturedMode);
             });
+
+            // High score badge on right side of button
+            int highScore = HighScoreManager.GetHighScore(mode);
+            if (highScore > 0)
+            {
+                string grade = HighScoreManager.GetHighGrade(mode);
+                var hsObj = UIFactory.CreateText("HighScore", btnObj.transform,
+                    $"{grade}  {highScore}", 12, new Color(1f, 0.85f, 0.2f, 0.7f),
+                    FontStyles.Bold, TextAlignmentOptions.Right);
+                UIFactory.SetAnchors(hsObj, new Vector2(0.6f, 0), new Vector2(0.96f, 1));
+            }
 
             // Description below button
             var descObj = UIFactory.CreateText($"Desc_{label}", parent,

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
+using HotToMark.Scoring;
 
 namespace HotToMark.UI
 {
@@ -118,6 +119,25 @@ namespace HotToMark.UI
                 "", 12, new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 18);
 
             reversingGroup.SetActive(false);
+
+            // Pause button (top-right)
+            var pauseBtn = UIFactory.CreateImage("PauseButton", hudPanel.transform,
+                new Color(0.2f, 0.2f, 0.2f, 0.5f));
+            var pauseRect = pauseBtn.GetComponent<RectTransform>();
+            pauseRect.anchorMin = new Vector2(1, 1);
+            pauseRect.anchorMax = new Vector2(1, 1);
+            pauseRect.pivot = new Vector2(1, 1);
+            pauseRect.sizeDelta = new Vector2(50, 40);
+
+            var pauseLabel = UIFactory.CreateText("PauseLabel", pauseBtn.transform,
+                "||", 18, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(pauseLabel, new Vector2(0, 0), new Vector2(1, 1));
+
+            var btn = pauseBtn.AddComponent<Button>();
+            btn.onClick.AddListener(() =>
+            {
+                if (GameManager.Instance != null) GameManager.Instance.PauseGame();
+            });
         }
 
         private GameObject CreateGroup(string name, Transform parent)
@@ -168,7 +188,8 @@ namespace HotToMark.UI
                     state = GameManager.Instance.state;
                 return;
             }
-            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
+            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
+                || state.phase == GamePhase.Paused)
                 return;
 
             UpdateModeLabel();

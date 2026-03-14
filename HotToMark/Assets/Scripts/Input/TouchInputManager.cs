@@ -55,7 +55,16 @@ namespace HotToMark.Input
         {
             EnsureInit();
             if (state == null) return;
-            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
+
+            // Pause toggle (Escape key)
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                GameManager.Instance.TogglePause();
+                return;
+            }
+
+            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
+                || state.phase == GamePhase.Paused)
                 return;
 
             HandleKeyboardInput();

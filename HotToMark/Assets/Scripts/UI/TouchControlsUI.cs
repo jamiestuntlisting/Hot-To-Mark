@@ -30,9 +30,9 @@ namespace HotToMark.UI
 
         private void BuildUI()
         {
-            // Brake zone — left side, bottom
+            // Brake zone — left side, bottom (matches TouchInputManager's 50% split)
             var brakeObj = UIFactory.CreateImage("BrakeZone", transform, brakeInactiveColor);
-            UIFactory.SetAnchors(brakeObj, new Vector2(0, 0), new Vector2(0.45f, 0.35f));
+            UIFactory.SetAnchors(brakeObj, new Vector2(0, 0), new Vector2(0.5f, 0.4f));
             brakePedalZone = brakeObj.GetComponent<Image>();
 
             var brakeLabel = UIFactory.CreateText("BrakeLabel", brakeObj.transform,
@@ -40,9 +40,9 @@ namespace HotToMark.UI
                 FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(brakeLabel, new Vector2(0, 0), new Vector2(1, 1));
 
-            // Gas zone — right side, bottom
+            // Gas zone — right side, bottom (matches TouchInputManager's 50% split)
             var gasObj = UIFactory.CreateImage("GasZone", transform, gasInactiveColor);
-            UIFactory.SetAnchors(gasObj, new Vector2(0.55f, 0), new Vector2(1, 0.35f));
+            UIFactory.SetAnchors(gasObj, new Vector2(0.5f, 0), new Vector2(1, 0.4f));
             gasPedalZone = gasObj.GetComponent<Image>();
 
             var gasLabel = UIFactory.CreateText("GasLabel", gasObj.transform,

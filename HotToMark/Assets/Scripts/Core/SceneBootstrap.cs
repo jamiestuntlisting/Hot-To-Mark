@@ -150,6 +150,12 @@ namespace HotToMark.Core
             // ---- PIP Display (overlay on UI canvas) ----
             BuildPIPDisplay(uiRoot.transform, pipController);
 
+            // ---- Pause Menu ----
+            var pauseObj = new GameObject("PauseMenu");
+            pauseObj.transform.SetParent(uiRoot.transform, false);
+            pauseObj.AddComponent<RectTransform>().SetFullStretch();
+            var pauseMenu = pauseObj.AddComponent<PauseMenuUI>();
+
             // ---- GameManager (wires everything) ----
             var gmObj = new GameObject("GameManager");
             var gm = gmObj.AddComponent<GameManager>();
@@ -165,6 +171,7 @@ namespace HotToMark.Core
             gm.haptics = haptics;
             gm.crewManager = crewManager;
             gm.pipCamera = pipController;
+            gm.pauseMenu = pauseMenu;
 
             // ---- Visual Polish (Stage 8) ----
             var polishObj = new GameObject("VisualPolish");

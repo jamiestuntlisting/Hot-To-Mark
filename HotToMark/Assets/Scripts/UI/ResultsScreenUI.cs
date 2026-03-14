@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
 using HotToMark.Scoring;
+using System.Collections.Generic;
 
 namespace HotToMark.UI
 {
@@ -23,6 +24,7 @@ namespace HotToMark.UI
         private TextMeshProUGUI returnToOneLine;
         private TextMeshProUGUI modeScoreLine;
         private TextMeshProUGUI statsText;
+        private TextMeshProUGUI highScoreText;
         private Transform penaltyContainer;
         private Button playAgainButton;
         private Button backToMenuButton;
@@ -123,15 +125,22 @@ namespace HotToMark.UI
             UIFactory.SetAnchors(statsObj, new Vector2(0, 0), new Vector2(1, 1));
             statsText = statsObj.GetComponent<TextMeshProUGUI>();
 
+            // High score line
+            var highScoreObj = UIFactory.CreateText("HighScore", resultsPanel.transform,
+                "", 14, new Color(1f, 0.85f, 0.2f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(highScoreObj, new Vector2(0.1f, 0.17f), new Vector2(0.9f, 0.22f));
+            highScoreText = highScoreObj.GetComponent<TextMeshProUGUI>();
+
             // Buttons
             var playAgainObj = CreateResultButton("Play Again", resultsPanel.transform,
-                new Vector2(0.08f, 0.08f), new Vector2(0.48f, 0.17f),
+                new Vector2(0.08f, 0.03f), new Vector2(0.48f, 0.12f),
                 new Color(1f, 0.6f, 0));
             playAgainButton = playAgainObj.GetComponent<Button>();
             playAgainButton.onClick.AddListener(OnPlayAgain);
 
             var menuBtnObj = CreateResultButton("Back to Menu", resultsPanel.transform,
-                new Vector2(0.52f, 0.08f), new Vector2(0.92f, 0.17f),
+                new Vector2(0.52f, 0.03f), new Vector2(0.92f, 0.12f),
                 new Color(0.3f, 0.3f, 0.3f));
             backToMenuButton = menuBtnObj.GetComponent<Button>();
             backToMenuButton.onClick.AddListener(OnBackToMenu);
@@ -198,6 +207,16 @@ namespace HotToMark.UI
             statsText.text = $"Top Speed: {result.topSpeed:F1} mph   |   " +
                 $"Total Time: {result.totalTime:F1}s   |   " +
                 $"Mark: {result.markDistance:F0} ft";
+
+            // High score display
+            int highScore = HighScoreManager.GetHighScore(state.mode);
+            int plays = HighScoreManager.GetPlayCount(state.mode);
+            if (result.totalScore >= highScore && plays > 0)
+                highScoreText.text = "NEW HIGH SCORE!";
+            else if (highScore > 0)
+                highScoreText.text = $"Personal Best: {highScore}/100 ({HighScoreManager.GetHighGrade(state.mode)})";
+            else
+                highScoreText.text = "";
         }
 
         public void Hide()
