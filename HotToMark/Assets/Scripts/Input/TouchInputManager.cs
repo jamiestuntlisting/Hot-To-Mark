@@ -26,23 +26,35 @@ namespace HotToMark.Input
         [Tooltip("Right side of screen = gas")]
         [SerializeField] private float gasBrakeZoneSplit = 0.5f;
 
-        [Header("References")]
-        [SerializeField] private CarController carController;
-        [SerializeField] private HornSystem hornSystem;
+        private CarController carController;
+        private HornSystem hornSystem;
 
         private GameState state;
         private float swipeSteerValue;
+        private bool initialized;
 
         public enum SteeringMode { Tilt, Swipe }
 
         void Start()
         {
-            state = GameManager.Instance.state;
             UnityEngine.Input.gyro.enabled = true;
+        }
+
+        private void EnsureInit()
+        {
+            if (initialized) return;
+            if (GameManager.Instance == null) return;
+
+            state = GameManager.Instance.state;
+            carController = GameManager.Instance.carController;
+            hornSystem = GameManager.Instance.hornSystem;
+            initialized = true;
         }
 
         void Update()
         {
+            EnsureInit();
+            if (state == null) return;
             if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
                 return;
 

@@ -58,13 +58,17 @@ namespace HotToMark.Audio
 
         void Start()
         {
-            state = GameManager.Instance.state;
             nextWalkieTime = Random.Range(walkieMinInterval, walkieMaxInterval);
         }
 
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
 
             if (state.phase == GamePhase.Driving || state.phase == GamePhase.Reversing)
             {

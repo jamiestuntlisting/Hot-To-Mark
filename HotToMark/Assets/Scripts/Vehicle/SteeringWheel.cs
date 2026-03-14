@@ -22,14 +22,14 @@ namespace HotToMark.Vehicle
 
         private GameState state;
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
 
             // Rotate the wheel around its local Z axis
             float angle = state.wheelAngle;

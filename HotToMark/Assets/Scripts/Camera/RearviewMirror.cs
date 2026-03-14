@@ -44,20 +44,14 @@ namespace HotToMark.Camera
             mirrorCamera.depth = -2; // render before main camera
         }
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-
-            // Apply render texture to mirror surface
-            if (mirrorRenderer != null)
-            {
-                mirrorRenderer.material.mainTexture = mirrorRT;
-            }
-        }
-
         void LateUpdate()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
 
             // Follow the car
             Vector3 carPos = CarController.FeetToWorldPosition(state.posY, state.posX);

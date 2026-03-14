@@ -40,13 +40,17 @@ namespace HotToMark.Environment
 
         void Start()
         {
-            state = GameManager.Instance.state;
             CreateMarkObjects();
         }
 
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
             UpdateMarkVisibility();
             UpdateThresholdColor();
         }

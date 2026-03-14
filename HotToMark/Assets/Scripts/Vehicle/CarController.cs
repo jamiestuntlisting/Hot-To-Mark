@@ -19,15 +19,22 @@ namespace HotToMark.Vehicle
         [SerializeField] private float lateralSpeedFactor = 0.003f;
 
         private GameState state;
+        private bool initialized;
         private const float MPH_TO_FPS = 1.467f; // mph to feet/s
 
-        void Start()
+        private void EnsureInit()
         {
+            if (initialized) return;
+            if (GameManager.Instance == null) return;
             state = GameManager.Instance.state;
+            initialized = true;
         }
 
         void Update()
         {
+            EnsureInit();
+            if (state == null) return;
+
             if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
                 return;
 
@@ -36,7 +43,6 @@ namespace HotToMark.Vehicle
 
             if (state.phase == GamePhase.StoppedOnMark || state.phase == GamePhase.Honking)
             {
-                // Car is frozen on the mark
                 state.speed *= 0.92f;
                 if (Mathf.Abs(state.speed) < 0.1f) state.speed = 0;
                 return;
@@ -88,7 +94,6 @@ namespace HotToMark.Vehicle
                 if (state.speed < 0) state.speed = 0;
             }
 
-            // Clamp to speed limits
             state.speed = Mathf.Clamp(state.speed,
                 -GameState.MAX_REVERSE_MPH, GameState.MAX_FORWARD_MPH);
         }
@@ -98,11 +103,9 @@ namespace HotToMark.Vehicle
             float feetPerSec = state.speed * MPH_TO_FPS;
             state.posY += feetPerSec * dt;
 
-            // Lateral movement from steering
             state.posX += state.steering * Mathf.Abs(state.speed) * lateralSpeedFactor * dt * 60f;
             state.posX = Mathf.Clamp(state.posX, -1f, 1f);
 
-            // Update the actual transform position for 3D objects
             Vector3 worldPos = FeetToWorldPosition(state.posY, state.posX);
             transform.position = worldPos;
         }
@@ -137,7 +140,6 @@ namespace HotToMark.Vehicle
             float distFromMark = Mathf.Abs(state.posY - state.markDistance);
             float threshold = state.markDistance * GameState.MARK_THRESHOLD_PCT;
 
-            // Normal stop near mark
             if (state.posY >= state.markDistance - threshold
                 && Mathf.Abs(state.speed) < 0.5f
                 && state.speed >= 0)
@@ -145,7 +147,6 @@ namespace HotToMark.Vehicle
                 float accuracy = Mathf.Max(0, 100f - (distFromMark / threshold) * 100f);
                 GameManager.Instance.OnStoppedOnMark(accuracy);
             }
-            // Overshoot stop
             else if (state.posY > state.markDistance + GameState.OVERSHOOT_LIMIT
                      && Mathf.Abs(state.speed) < 0.5f)
             {
@@ -165,23 +166,19 @@ namespace HotToMark.Vehicle
             }
         }
 
-        /// <summary>
-        /// Apply steering input (called by TouchInputManager or keyboard input).
-        /// </summary>
         public void SetSteeringInput(float input)
         {
+            EnsureInit();
+            if (state == null) return;
+
             float dt = Time.deltaTime;
             state.steering += (input * steerSensitivity - state.steering) * dt * steerSmoothing;
             state.wheelAngle = state.steering * 45f;
         }
 
-        /// <summary>
-        /// Convert game-feet position to Unity world coordinates.
-        /// 1 foot = 0.3048 meters, but we use a scale factor for visual clarity.
-        /// </summary>
         public static Vector3 FeetToWorldPosition(float feetForward, float lateralOffset)
         {
-            float worldScale = 0.3f; // 1 foot ≈ 0.3 Unity units for a good visual scale
+            float worldScale = 0.3f;
             return new Vector3(lateralOffset * 3f, 0, feetForward * worldScale);
         }
     }

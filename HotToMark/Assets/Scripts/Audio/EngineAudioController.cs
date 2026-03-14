@@ -57,14 +57,15 @@ namespace HotToMark.Audio
             GenerateAllClips();
         }
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         void Update()
         {
-            if (!engineRunning || state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
+            if (!engineRunning) return;
 
             UpdateEnginePitch();
             CheckTireScreech();

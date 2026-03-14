@@ -33,13 +33,14 @@ namespace HotToMark.Environment
             new CrewPlacement( 1, 250, CrewType.CameraOp),
         };
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         void Update()
         {
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
             if (crewMembers == null) return;
 
             // Show/hide crew based on distance from car

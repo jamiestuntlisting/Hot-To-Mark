@@ -31,14 +31,15 @@ namespace HotToMark.Haptics
         private float lastEngineHapticTime;
         private GameState state;
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         void Update()
         {
-            if (!hapticsEnabled || state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
+            if (!hapticsEnabled) return;
 
             // Continuous engine vibration while driving
             if (state.phase == GamePhase.Driving || state.phase == GamePhase.Reversing)

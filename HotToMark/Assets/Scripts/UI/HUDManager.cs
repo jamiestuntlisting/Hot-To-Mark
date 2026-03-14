@@ -47,11 +47,6 @@ namespace HotToMark.UI
             BuildUI();
         }
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         private void BuildUI()
         {
             // HUD panel — semi-transparent, top-left area
@@ -167,7 +162,13 @@ namespace HotToMark.UI
 
         void Update()
         {
-            if (state == null || state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
+            if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results)
                 return;
 
             UpdateModeLabel();

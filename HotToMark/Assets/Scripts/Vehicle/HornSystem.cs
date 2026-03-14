@@ -16,13 +16,21 @@ namespace HotToMark.Vehicle
 
         private GameState state;
         private AudioSource audioSource;
+        private bool initialized;
 
         void Start()
         {
-            state = GameManager.Instance.state;
             audioSource = GetComponent<AudioSource>();
             if (audioSource == null)
                 audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        private void EnsureInit()
+        {
+            if (initialized) return;
+            if (GameManager.Instance == null) return;
+            state = GameManager.Instance.state;
+            initialized = true;
         }
 
         /// <summary>
@@ -30,6 +38,8 @@ namespace HotToMark.Vehicle
         /// </summary>
         public void Honk()
         {
+            EnsureInit();
+            if (state == null) return;
             if (state.phase != GamePhase.StoppedOnMark && state.phase != GamePhase.Honking)
                 return;
 

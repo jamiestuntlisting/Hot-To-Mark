@@ -28,11 +28,6 @@ namespace HotToMark.UI
             BuildUI();
         }
 
-        void Start()
-        {
-            state = GameManager.Instance.state;
-        }
-
         private void BuildUI()
         {
             // Brake zone — left side, bottom
@@ -81,7 +76,12 @@ namespace HotToMark.UI
 
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
 
             gasPedalZone.color = state.throttle > 0 ? gasActiveColor : gasInactiveColor;
             brakePedalZone.color = state.brake > 0 ? brakeActiveColor : brakeInactiveColor;

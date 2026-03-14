@@ -36,7 +36,6 @@ namespace HotToMark.Environment
 
         void Start()
         {
-            state = GameManager.Instance.state;
             BuildRoad();
             BuildCenterLine();
             BuildEdgeLines();
@@ -45,7 +44,12 @@ namespace HotToMark.Environment
 
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
             UpdateCenterLineDashes();
         }
 

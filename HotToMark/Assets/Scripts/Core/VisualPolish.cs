@@ -27,12 +27,17 @@ namespace HotToMark.Core
 
         void Start()
         {
-            state = GameManager.Instance.state;
             ApplyMaterialPolish();
         }
 
         void Update()
         {
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
             UpdateAnimatedEffects();
         }
 

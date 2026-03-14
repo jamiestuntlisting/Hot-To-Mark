@@ -45,7 +45,8 @@ namespace HotToMark.Core
 
         void Start()
         {
-            ShowMenu();
+            // Defer to let SceneBootstrap finish wiring all references
+            Invoke(nameof(ShowMenu), 0);
         }
 
         public void ShowMenu()

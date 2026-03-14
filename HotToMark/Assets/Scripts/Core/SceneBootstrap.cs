@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using HotToMark.Vehicle;
 using HotToMark.Environment;
 using HotToMark.Camera;
@@ -191,6 +192,15 @@ namespace HotToMark.Core
             scaler.matchWidthOrHeight = 0.5f;
 
             canvasObj.AddComponent<GraphicRaycaster>();
+
+            // EventSystem is required for UI button/touch input to work
+            if (FindObjectOfType<EventSystem>() == null)
+            {
+                var eventObj = new GameObject("EventSystem");
+                eventObj.AddComponent<EventSystem>();
+                eventObj.AddComponent<StandaloneInputModule>();
+            }
+
             return canvasObj;
         }
 

@@ -32,15 +32,21 @@ namespace HotToMark.Camera
 
         void Start()
         {
-            state = GameManager.Instance.state;
-            car = GameManager.Instance.carController;
             cam = GetComponent<UnityEngine.Camera>();
             cam.fieldOfView = baseFOV;
         }
 
         void LateUpdate()
         {
-            if (state == null || car == null) return;
+            if (state == null || car == null)
+            {
+                if (GameManager.Instance != null)
+                {
+                    state = GameManager.Instance.state;
+                    car = GameManager.Instance.carController;
+                }
+                return;
+            }
 
             // Follow car position
             Vector3 carWorldPos = CarController.FeetToWorldPosition(state.posY, state.posX);

@@ -29,9 +29,7 @@ namespace HotToMark.Vehicle
 
         void Start()
         {
-            state = GameManager.Instance.state;
             currentNeedleAngle = minAngle;
-
             FindNeedle();
             BuildDigitalDisplays();
         }
@@ -92,7 +90,12 @@ namespace HotToMark.Vehicle
 
         void Update()
         {
-            if (state == null) return;
+            if (state == null)
+            {
+                if (GameManager.Instance != null)
+                    state = GameManager.Instance.state;
+                return;
+            }
 
             float absSpeed = Mathf.Abs(state.speed);
 
