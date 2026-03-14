@@ -3,161 +3,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hot to Mark - Stunt Driving Game</title>
+<title>Hot to Mark — The Stunt Driving Game</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
-canvas { border: 2px solid #333; border-radius: 4px; }
+body {
+  background: #0a0a0a;
+  display: flex; justify-content: center; align-items: center;
+  height: 100vh; overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+canvas { border: 2px solid #222; border-radius: 6px; cursor: default; }
+
+/* ---- HUD Overlay ---- */
 #ui-overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; display: flex; flex-direction: column; align-items: center;
 }
-#hud { position: absolute; top: 10px; left: 10px; color: #fff; font-size: 14px; text-shadow: 1px 1px 2px #000; }
-#hud div { margin-bottom: 4px; }
-#message-box {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.85); color: #fff; padding: 30px 50px; border-radius: 12px;
-  text-align: center; font-size: 20px; display: none; pointer-events: auto;
-  border: 2px solid #f90;
+#hud {
+  position: absolute; top: 12px; left: 14px;
+  color: #fff; font-size: 14px; text-shadow: 1px 1px 3px #000;
+  line-height: 1.6;
 }
-#message-box h2 { color: #f90; margin-bottom: 10px; }
-#message-box .score { font-size: 36px; font-weight: bold; color: #0f0; }
-#message-box .penalty { color: #f44; }
-#message-box button {
-  margin-top: 15px; padding: 10px 30px; font-size: 16px; cursor: pointer;
-  background: #f90; border: none; border-radius: 6px; color: #000; font-weight: bold;
-}
-#message-box button:hover { background: #fb0; }
-#controls-help {
-  position: absolute; bottom: 10px; left: 10px; color: #aaa; font-size: 12px;
-  text-shadow: 1px 1px 2px #000;
-}
+
+/* ---- Menu ---- */
 #mode-select {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.92); color: #fff; padding: 40px 60px; border-radius: 16px;
+  background: rgba(8,8,8,0.94); color: #fff; padding: 44px 64px; border-radius: 18px;
   text-align: center; pointer-events: auto; border: 2px solid #f90;
+  box-shadow: 0 0 60px rgba(255,153,0,0.15);
+  display: none;
 }
-#mode-select h1 { color: #f90; font-size: 42px; margin-bottom: 5px; }
-#mode-select .subtitle { color: #ccc; margin-bottom: 25px; font-style: italic; }
+#mode-select h1 {
+  color: #f90; font-size: 46px; margin-bottom: 2px;
+  letter-spacing: 4px; text-shadow: 0 0 20px rgba(255,153,0,0.4);
+}
+#mode-select .subtitle { color: #bbb; margin-bottom: 28px; font-style: italic; font-size: 15px; }
 #mode-select button {
-  display: block; width: 100%; margin: 8px 0; padding: 14px 30px; font-size: 18px;
-  cursor: pointer; background: #222; border: 2px solid #f90; border-radius: 8px;
-  color: #fff; font-weight: bold; transition: all 0.2s;
+  display: block; width: 100%; margin: 8px 0; padding: 14px 30px; font-size: 17px;
+  cursor: pointer; background: #181818; border: 2px solid #f90; border-radius: 8px;
+  color: #fff; font-weight: bold; transition: all 0.2s; letter-spacing: 1px;
 }
-#mode-select button:hover { background: #f90; color: #000; }
-#mode-select .mode-desc { font-size: 12px; color: #999; margin-top: -4px; margin-bottom: 8px; }
+#mode-select button:hover { background: #f90; color: #000; transform: scale(1.02); }
+#mode-select .mode-desc { font-size: 11px; color: #888; margin-top: -4px; margin-bottom: 10px; }
+
+/* ---- Results ---- */
+#message-box {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(8,8,8,0.92); color: #fff; padding: 34px 54px; border-radius: 14px;
+  text-align: center; font-size: 18px; display: none; pointer-events: auto;
+  border: 2px solid #f90; box-shadow: 0 0 50px rgba(255,153,0,0.12);
+  max-width: 520px;
+}
+#message-box h2 { color: #f90; margin-bottom: 8px; font-size: 28px; letter-spacing: 2px; }
+#message-box .score { font-size: 40px; font-weight: bold; color: #4f4; margin: 6px 0; }
+#message-box .penalty { color: #f55; font-size: 13px; }
+#message-box .breakdown { text-align: left; margin: 14px 0; font-size: 14px; line-height: 1.9; }
+#message-box .stats { font-size: 12px; color: #888; margin-bottom: 12px; }
+#message-box button {
+  margin: 6px 4px 0; padding: 11px 32px; font-size: 15px; cursor: pointer;
+  background: #f90; border: none; border-radius: 6px; color: #000; font-weight: bold;
+  transition: all 0.15s;
+}
+#message-box button:hover { background: #ffb833; transform: scale(1.03); }
+
+/* ---- Controls Help ---- */
+#controls-help {
+  position: absolute; bottom: 10px; left: 12px; color: #666; font-size: 11px;
+  text-shadow: 1px 1px 2px #000; letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="ui-overlay">
   <div id="hud"></div>
-  <div id="message-box"></div>
   <div id="mode-select"></div>
+  <div id="message-box"></div>
   <div id="controls-help"></div>
 </div>
 
 <script>
-// ============================================================
-// HOT TO MARK - Stunt Driving Game
-// ============================================================
+// ================================================================
+//  HOT TO MARK — The Stunt Driving Game
+//  Built from Scope & Sequence stages 1-8
+// ================================================================
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-
 const W = 1200, H = 750;
-canvas.width = W;
-canvas.height = H;
+canvas.width = W; canvas.height = H;
 
-// --- GAME STATE ---
-const PHASE = { MENU: 0, DRIVING_TO_MARK: 1, STOPPED_ON_MARK: 2, HONKING: 3, REVERSING: 4, RESULTS: 5 };
-
-let state = {
-  phase: PHASE.MENU,
-  mode: 'standard', // standard, speed, smooth, exactmph
-  // Car physics
-  posX: 0,          // lateral position (-1 to 1)
-  posY: 0,          // distance traveled (feet)
-  speed: 0,         // mph
-  steering: 0,      // -1 to 1
-  throttle: 0,
-  brake: 0,
-  gear: 'D',        // D or R
-  // Mark
-  markDistance: 200, // feet to the mark
-  startDistance: 0,
-  // Scoring
-  markAccuracy: 0,
-  honkCount: 0,
-  honkPenalty: false,
-  reverseStartTime: 0,
-  reverseTooSlow: false,
-  reverseTooFast: false,
-  reverseMaxSpeed: 0,
-  reverseAccuracy: 0,
-  smoothnessScore: 100,
-  lastThrottle: 0,
-  lastSteering: 0,
-  jerkAccum: 0,
-  maxSpeedHit: 0,
-  targetMPH: 0,     // for exact mph mode
-  exactMPHAccuracy: 0,
-  checkpointPassed: false,
-  checkpointDistance: 0,
-  speedAtCheckpoint: 0,
-  takeTime: 0,
-  takeStartTime: 0,
-  // Animation
-  wheelAngle: 0,
-  roadOffset: 0,
-  // Input
-  keys: {},
+// ----------------------------------------------------------------
+//  CONSTANTS
+// ----------------------------------------------------------------
+const PHASE = {
+  MENU: 0, DRIVING: 1, STOPPED_ON_MARK: 2,
+  HONKING: 3, REVERSING: 4, RESULTS: 5
 };
 
-// --- INPUT ---
+const MAX_FORWARD_MPH = 60;
+const MAX_REVERSE_MPH = 25;
+const MARK_MIN = 150;
+const MARK_MAX = 350;
+const MARK_THRESHOLD_PCT = 0.05;
+const HONKS_REQUIRED = 2;
+const REVERSE_SHIFT_DELAY = 500;
+const HURRY_TIME = 15;
+const PENALTY_SLOW_TIME = 20;
+const PENALTY_FAST_MPH = 15;
+const PENALTY_POINTS = 10;
+const RETURN_TOLERANCE = 2;
+const OVERSHOOT_LIMIT = 20;
+
+const HORIZON_Y = H * 0.38;
+const ROAD_TOP_W = 180;
+const ROAD_BOT_W = 900;
+
+// ----------------------------------------------------------------
+//  AUDIO ENGINE (Web Audio API)
+// ----------------------------------------------------------------
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// -- Horn (8.3: realistic car horn, dual-tone) --
+function playHorn() {
+  try {
+    const ac = getAudioCtx();
+    const t = ac.currentTime;
+    // Dual-tone horn for realism
+    [380, 507].forEach(freq => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.frequency.value = freq;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.linearRampToValueAtTime(0.10, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.start(t); osc.stop(t + 0.4);
+    });
+    triggerHaptic('horn');
+  } catch (e) {}
+}
+
+// -- Tire screech (8.2) --
+function playTireScreech(intensity) {
+  try {
+    const ac = getAudioCtx();
+    const bufSize = ac.sampleRate * 0.25;
+    const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1200 + intensity * 800; bp.Q.value = 3;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(Math.min(0.08, intensity * 0.04), ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.25);
+    src.connect(bp); bp.connect(gain); gain.connect(ac.destination);
+    src.start(); src.stop(ac.currentTime + 0.25);
+    triggerHaptic('brake');
+  } catch (e) {}
+}
+
+// -- Engine audio (8.1: RPM-based idle, accel, decel) --
+let engineOsc = null, engineGain = null;
+let engineOsc2 = null, engineGain2 = null; // second harmonic for richness
+let engineNoise = null, engineNoiseGain = null; // exhaust rumble
+function initEngineSound() {
+  try {
+    const ac = getAudioCtx();
+    // Primary oscillator (fundamental)
+    engineOsc = ac.createOscillator();
+    engineGain = ac.createGain();
+    engineOsc.type = 'sawtooth';
+    engineOsc.frequency.value = 55;
+    engineGain.gain.value = 0;
+    engineOsc.connect(engineGain); engineGain.connect(ac.destination);
+    engineOsc.start();
+
+    // Second harmonic
+    engineOsc2 = ac.createOscillator();
+    engineGain2 = ac.createGain();
+    engineOsc2.type = 'triangle';
+    engineOsc2.frequency.value = 110;
+    engineGain2.gain.value = 0;
+    engineOsc2.connect(engineGain2); engineGain2.connect(ac.destination);
+    engineOsc2.start();
+
+    // Exhaust noise layer
+    const bufSize = ac.sampleRate * 2;
+    const noiseBuf = ac.createBuffer(1, bufSize, ac.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) noiseData[i] = (Math.random() * 2 - 1);
+    engineNoise = ac.createBufferSource();
+    engineNoise.buffer = noiseBuf;
+    engineNoise.loop = true;
+    engineNoiseGain = ac.createGain();
+    engineNoiseGain.gain.value = 0;
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 200;
+    engineNoise.connect(lp); lp.connect(engineNoiseGain); engineNoiseGain.connect(ac.destination);
+    engineNoise.start();
+  } catch (e) {}
+}
+function updateEngineSound(speed, throttle) {
+  if (!engineOsc) return;
+  const absSpeed = Math.abs(speed);
+  // RPM simulation: idle at ~55Hz, rev up with speed and throttle
+  const idleRPM = 55;
+  const speedRPM = absSpeed * 3.2;
+  const throttleRPM = throttle * 25;
+  const rpm = idleRPM + speedRPM + throttleRPM;
+
+  engineOsc.frequency.value = rpm;
+  engineOsc2.frequency.value = rpm * 2.01; // slight detune for richness
+
+  // Volume: idle hum + throttle response + speed contribution
+  const idleVol = 0.006;
+  const throttleVol = throttle * 0.018;
+  const speedVol = absSpeed * 0.0004;
+  const vol = Math.min(0.05, idleVol + throttleVol + speedVol);
+  engineGain.gain.value = vol;
+  engineGain2.gain.value = vol * 0.3;
+  if (engineNoiseGain) engineNoiseGain.gain.value = vol * 0.4;
+
+  // Haptic engine vibration
+  if (absSpeed > 5 || throttle > 0) triggerHaptic('engine');
+}
+function stopEngineSound() {
+  if (engineGain) engineGain.gain.value = 0;
+  if (engineGain2) engineGain2.gain.value = 0;
+  if (engineNoiseGain) engineNoiseGain.gain.value = 0;
+}
+
+// -- Voice calls (8.5 "Action!", 8.6 "Cut!") via speech synthesis --
+function speakVoice(text, pitch, rate) {
+  try {
+    if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.pitch = pitch || 1.0;
+      u.rate = rate || 1.1;
+      u.volume = 0.7;
+      speechSynthesis.speak(u);
+    }
+  } catch (e) {}
+}
+function callAction() { speakVoice('Action!', 1.2, 1.0); }
+function callCut() { speakVoice('Cut!', 1.1, 0.9); }
+
+// -- Ambient film set audio (8.4: walkie chatter, crew sounds) --
+let ambientNode = null, ambientGainNode = null;
+function startAmbientAudio() {
+  try {
+    const ac = getAudioCtx();
+    // Create looping crackly walkie-talkie ambient
+    const bufSize = ac.sampleRate * 3;
+    const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      // Intermittent crackle bursts to simulate walkie chatter
+      const burst = Math.sin(i / (ac.sampleRate * 0.4)) > 0.7 ? 1 : 0;
+      data[i] = (Math.random() * 2 - 1) * 0.02 * burst;
+    }
+    ambientNode = ac.createBufferSource();
+    ambientNode.buffer = buf;
+    ambientNode.loop = true;
+    ambientGainNode = ac.createGain();
+    ambientGainNode.gain.value = 0.15;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 5;
+    ambientNode.connect(bp); bp.connect(ambientGainNode); ambientGainNode.connect(ac.destination);
+    ambientNode.start();
+  } catch (e) {}
+}
+function stopAmbientAudio() {
+  try {
+    if (ambientNode) { ambientNode.stop(); ambientNode = null; }
+  } catch (e) {}
+}
+
+// -- Haptic feedback (8.7: engine vibration, brake pulse, horn tap) --
+function triggerHaptic(type) {
+  try {
+    if (!navigator.vibrate) return;
+    switch (type) {
+      case 'horn': navigator.vibrate(80); break;
+      case 'brake': navigator.vibrate([30, 10, 30]); break;
+      case 'engine': navigator.vibrate(8); break;
+      case 'mark': navigator.vibrate([50, 30, 50, 30, 50]); break;
+    }
+  } catch (e) {}
+}
+
+// ----------------------------------------------------------------
+//  GAME STATE
+// ----------------------------------------------------------------
+let state = createFreshState();
+
+function createFreshState() {
+  return {
+    phase: PHASE.MENU,
+    mode: 'standard',
+    // Physics
+    posX: 0, posY: 0, speed: 0,
+    steering: 0, throttle: 0, brake: 0,
+    gear: 'D',
+    wheelAngle: 0,
+    roadOffset: 0,
+    // Mark
+    markDistance: 250,
+    // Scoring
+    markAccuracy: 0,
+    honkCount: 0,
+    honkPenalty: false,
+    reverseStartTime: 0,
+    reverseTooSlow: false,
+    reverseTooFast: false,
+    reverseMaxSpeed: 0,
+    reverseAccuracy: 0,
+    maxSpeedHit: 0,
+    takeTime: 0,
+    takeStartTime: 0,
+    // Smoothness tracking
+    lastThrottle: 0, lastSteering: 0,
+    jerkAccum: 0,
+    smoothnessScore: 100,
+    // Exact MPH mode
+    targetMPH: 0,
+    exactMPHAccuracy: 0,
+    checkpointPassed: false,
+    checkpointDistance: 0,
+    speedAtCheckpoint: 0,
+    // Tire screech cooldown
+    lastScreechTime: 0,
+    // Input
+    keys: {},
+    // PIP blinking
+    recBlink: true, recBlinkTimer: 0,
+  };
+}
+
+// ----------------------------------------------------------------
+//  INPUT
+// ----------------------------------------------------------------
 document.addEventListener('keydown', e => {
   state.keys[e.code] = true;
-  if (e.code === 'Space' && (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING)) {
+  if (e.code === 'Space') {
     e.preventDefault();
-    handleHonk();
+    if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+      handleHonk();
+    }
   }
 });
 document.addEventListener('keyup', e => { state.keys[e.code] = false; });
 
 function handleHonk() {
-  if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
-    state.honkCount++;
-    state.phase = PHASE.HONKING;
-    honkSound();
-    if (state.honkCount >= 2) {
-      setTimeout(() => {
+  state.honkCount++;
+  state.phase = PHASE.HONKING;
+  playHorn();
+  if (state.honkCount >= HONKS_REQUIRED) {
+    setTimeout(() => {
+      if (state.phase === PHASE.HONKING) {
         state.gear = 'R';
         state.phase = PHASE.REVERSING;
         state.reverseStartTime = performance.now();
-      }, 500);
-    }
+      }
+    }, REVERSE_SHIFT_DELAY);
   }
 }
 
-function honkSound() {
-  try {
-    const actx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = actx.createOscillator();
-    const gain = actx.createGain();
-    osc.connect(gain);
-    gain.connect(actx.destination);
-    osc.frequency.value = 340;
-    osc.type = 'square';
-    gain.gain.value = 0.15;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
-    osc.stop(actx.currentTime + 0.4);
-  } catch(e) {}
-}
-
-// --- MODES ---
+// ----------------------------------------------------------------
+//  MENU
+// ----------------------------------------------------------------
 function showMenu() {
   state.phase = PHASE.MENU;
+  stopEngineSound();
   const el = document.getElementById('mode-select');
   el.innerHTML = `
     <h1>HOT TO MARK</h1>
@@ -165,7 +390,7 @@ function showMenu() {
     <button onclick="startGame('standard')">Standard Take</button>
     <div class="mode-desc">Drive to the mark, stop accurately, reverse to one.</div>
     <button onclick="startGame('speed')">Speed Run</button>
-    <div class="mode-desc">Complete the take as fast as possible.</div>
+    <div class="mode-desc">Complete the entire take as fast as possible.</div>
     <button onclick="startGame('smooth')">Smooth Operator</button>
     <div class="mode-desc">Minimize jerky inputs. Be cinematic.</div>
     <button onclick="startGame('exactmph')">Exact MPH</button>
@@ -173,6 +398,7 @@ function showMenu() {
   `;
   el.style.display = 'block';
   document.getElementById('message-box').style.display = 'none';
+  document.getElementById('hud').innerHTML = '';
   document.getElementById('controls-help').innerHTML = '';
 }
 
@@ -180,598 +406,849 @@ function startGame(mode) {
   document.getElementById('mode-select').style.display = 'none';
   document.getElementById('message-box').style.display = 'none';
 
-  const markDist = 150 + Math.random() * 200; // 150-350 feet
-  const targetMPH = 15 + Math.floor(Math.random() * 20); // 15-34 mph
+  const markDist = MARK_MIN + Math.random() * (MARK_MAX - MARK_MIN);
+  const target = 15 + Math.floor(Math.random() * 20);
 
-  Object.assign(state, {
-    phase: PHASE.DRIVING_TO_MARK,
-    mode: mode,
-    posX: 0, posY: 0, speed: 0, steering: 0,
-    throttle: 0, brake: 0, gear: 'D',
-    markDistance: markDist,
-    startDistance: 0,
-    markAccuracy: 0, honkCount: 0, honkPenalty: false,
-    reverseStartTime: 0, reverseTooSlow: false, reverseTooFast: false,
-    reverseMaxSpeed: 0, reverseAccuracy: 0,
-    smoothnessScore: 100, lastThrottle: 0, lastSteering: 0, jerkAccum: 0,
-    maxSpeedHit: 0, targetMPH: targetMPH, exactMPHAccuracy: 0,
-    checkpointPassed: false,
-    checkpointDistance: markDist * 0.6,
-    speedAtCheckpoint: 0,
-    takeTime: 0, takeStartTime: performance.now(),
-    wheelAngle: 0, roadOffset: 0,
-  });
+  state = createFreshState();
+  state.phase = PHASE.DRIVING;
+  state.mode = mode;
+  state.markDistance = markDist;
+  state.targetMPH = target;
+  state.checkpointDistance = markDist * 0.6;
+  state.takeStartTime = performance.now();
+
+  if (!engineOsc) initEngineSound();
 
   document.getElementById('controls-help').innerHTML =
-    'W/Up: Gas &nbsp; S/Down: Brake &nbsp; A/D or Left/Right: Steer &nbsp; Space: Honk &nbsp; (Reverse uses same controls)';
+    'W/&#x2191;: Gas &nbsp;&nbsp; S/&#x2193;: Brake &nbsp;&nbsp; A/D or &#x2190;/&#x2192;: Steer &nbsp;&nbsp; Space: Honk';
 }
-
-// expose to onclick
 window.startGame = startGame;
+window.showMenu = showMenu;
 
-// --- PHYSICS UPDATE ---
+// ----------------------------------------------------------------
+//  PHYSICS (Stage 2 + 4)
+// ----------------------------------------------------------------
 function updatePhysics(dt) {
   if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
 
   const k = state.keys;
-  // Throttle / brake
+
+  // Read inputs
   state.throttle = (k['KeyW'] || k['ArrowUp']) ? 1 : 0;
   state.brake = (k['KeyS'] || k['ArrowDown']) ? 1 : 0;
 
-  // Steering
   let steerInput = 0;
   if (k['KeyA'] || k['ArrowLeft']) steerInput = -1;
   if (k['KeyD'] || k['ArrowRight']) steerInput = 1;
-  state.steering += (steerInput * 0.8 - state.steering) * dt * 5;
+
+  // Smooth steering interpolation
+  state.steering += (steerInput * 0.85 - state.steering) * dt * 6;
   state.wheelAngle = state.steering * 45;
 
-  // Smoothness tracking
+  // Smoothness / jerk tracking (for Smooth Operator mode)
   const throttleJerk = Math.abs(state.throttle - state.lastThrottle);
   const steerJerk = Math.abs(state.steering - state.lastSteering);
   state.jerkAccum += (throttleJerk + steerJerk * 0.5) * dt * 60;
   state.lastThrottle = state.throttle;
   state.lastSteering = state.steering;
 
-  const isReversing = state.gear === 'R';
-  const dir = isReversing ? -1 : 1;
-
+  // When stopped on mark / honking, just freeze
   if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
-    // Waiting to honk - car is stopped
-    state.speed *= 0.95;
+    state.speed *= 0.92;
     if (Math.abs(state.speed) < 0.1) state.speed = 0;
+    updateEngineSound(0, 0);
     return;
   }
 
-  // Acceleration
-  const accelForce = state.throttle * 35; // mph/s
-  const brakeForce = state.brake * 50;    // mph/s
-  const drag = state.speed * 0.5;
-  const friction = 2;
+  const isReverse = state.gear === 'R';
 
-  if (isReversing) {
-    state.speed -= accelForce * dt;       // negative speed = reverse
+  // Forces
+  const accelForce = 35;   // mph/s at full throttle
+  const brakeForce = 55;   // mph/s at full brake
+  const dragCoeff = 0.4;
+  const rollingFriction = 1.8;
+
+  if (isReverse) {
+    // In reverse, throttle goes negative
+    state.speed -= state.throttle * accelForce * dt;
     if (state.speed > 0) state.speed = 0;
-    state.speed += brakeForce * dt;
+    state.speed += state.brake * brakeForce * dt;
     if (state.speed > 0) state.speed = 0;
-    state.speed += (drag + friction) * dt * (state.speed < 0 ? 1 : 0);
+    // Drag + friction push speed toward 0
+    if (state.speed < 0) {
+      state.speed += (Math.abs(state.speed) * dragCoeff + rollingFriction) * dt;
+      if (state.speed > 0) state.speed = 0;
+    }
   } else {
-    state.speed += accelForce * dt;
-    state.speed -= brakeForce * dt;
-    state.speed -= (drag + friction) * dt;
+    state.speed += state.throttle * accelForce * dt;
+    state.speed -= state.brake * brakeForce * dt;
+    if (state.speed > 0) {
+      state.speed -= (state.speed * dragCoeff + rollingFriction) * dt;
+    }
+    if (state.speed < 0) state.speed = 0;
   }
 
-  if (!isReversing && state.speed < 0) state.speed = 0;
-  if (isReversing && state.speed > 0) state.speed = 0;
-  state.speed = Math.max(-25, Math.min(60, state.speed));
+  // Speed limits
+  state.speed = Math.max(-MAX_REVERSE_MPH, Math.min(MAX_FORWARD_MPH, state.speed));
 
-  // Position
-  const feetPerSec = state.speed * 1.467; // mph to ft/s
+  // Tire screech on hard braking
+  if (state.brake > 0 && Math.abs(state.speed) > 15) {
+    const now = performance.now();
+    if (now - state.lastScreechTime > 300) {
+      playTireScreech(state.brake * Math.abs(state.speed) / 60);
+      state.lastScreechTime = now;
+    }
+  }
+
+  // Position update
+  const feetPerSec = state.speed * 1.467; // mph -> ft/s
   state.posY += feetPerSec * dt;
   state.posX += state.steering * Math.abs(state.speed) * 0.003 * dt * 60;
   state.posX = Math.max(-1, Math.min(1, state.posX));
   state.roadOffset += feetPerSec * dt;
 
-  // Track max speed
+  // Track stats
   if (state.speed > state.maxSpeedHit) state.maxSpeedHit = state.speed;
-  if (isReversing && Math.abs(state.speed) > state.reverseMaxSpeed) {
+  if (isReverse && Math.abs(state.speed) > state.reverseMaxSpeed) {
     state.reverseMaxSpeed = Math.abs(state.speed);
   }
 
-  // Checkpoint for exact MPH mode
-  if (!isReversing && !state.checkpointPassed && state.posY >= state.checkpointDistance) {
+  // Exact MPH checkpoint
+  if (!isReverse && !state.checkpointPassed && state.posY >= state.checkpointDistance) {
     state.checkpointPassed = true;
     state.speedAtCheckpoint = state.speed;
-    state.exactMPHAccuracy = 100 - Math.abs(state.speed - state.targetMPH) * 5;
-    if (state.exactMPHAccuracy < 0) state.exactMPHAccuracy = 0;
+    state.exactMPHAccuracy = Math.max(0, 100 - Math.abs(state.speed - state.targetMPH) * 5);
   }
 
-  // Stopping on mark
-  if (state.phase === PHASE.DRIVING_TO_MARK && state.posY >= state.markDistance - 5 && Math.abs(state.speed) < 0.5 && state.speed >= 0) {
+  // Mark detection (Stage 3)
+  if (state.phase === PHASE.DRIVING) {
     const distFromMark = Math.abs(state.posY - state.markDistance);
-    const threshold = state.markDistance * 0.05; // 5%
-    state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
-    state.speed = 0;
-    state.phase = PHASE.STOPPED_ON_MARK;
+    const threshold = state.markDistance * MARK_THRESHOLD_PCT;
+
+    // Stop near mark at low speed
+    if (state.posY >= state.markDistance - threshold && Math.abs(state.speed) < 0.5 && state.speed >= 0) {
+      state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
+      state.speed = 0;
+      state.phase = PHASE.STOPPED_ON_MARK;
+    }
+    // Auto-stop on overshoot
+    if (state.posY > state.markDistance + OVERSHOOT_LIMIT && Math.abs(state.speed) < 0.5) {
+      state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
+      state.speed = 0;
+      state.phase = PHASE.STOPPED_ON_MARK;
+    }
   }
 
-  // Auto-stop if overshot significantly
-  if (state.phase === PHASE.DRIVING_TO_MARK && state.posY > state.markDistance + 20 && Math.abs(state.speed) < 0.5) {
-    const distFromMark = Math.abs(state.posY - state.markDistance);
-    const threshold = state.markDistance * 0.05;
-    state.markAccuracy = Math.max(0, 100 - (distFromMark / threshold) * 100);
+  // Reverse to one detection (Stage 4)
+  if (state.phase === PHASE.REVERSING && state.posY <= RETURN_TOLERANCE && Math.abs(state.speed) < 0.5) {
     state.speed = 0;
-    state.phase = PHASE.STOPPED_ON_MARK;
-  }
-
-  // Reverse to one complete
-  if (state.phase === PHASE.REVERSING && state.posY <= 2 && Math.abs(state.speed) < 0.5) {
-    state.speed = 0;
-    const distFromStart = Math.abs(state.posY);
-    state.reverseAccuracy = Math.max(0, 100 - distFromStart * 10);
+    state.reverseAccuracy = Math.max(0, 100 - Math.abs(state.posY) * 10);
     state.takeTime = (performance.now() - state.takeStartTime) / 1000;
 
-    // Check penalties
     const reverseTime = (performance.now() - state.reverseStartTime) / 1000;
-    state.reverseTooSlow = reverseTime > 20;
-    state.reverseTooFast = state.reverseMaxSpeed > 15;
-    state.honkPenalty = state.honkCount < 2;
-
+    state.reverseTooSlow = reverseTime > PENALTY_SLOW_TIME;
+    state.reverseTooFast = state.reverseMaxSpeed > PENALTY_FAST_MPH;
+    state.honkPenalty = state.honkCount < HONKS_REQUIRED;
     state.smoothnessScore = Math.max(0, 100 - state.jerkAccum * 2);
 
     state.phase = PHASE.RESULTS;
     showResults();
   }
+
+  // Engine audio
+  updateEngineSound(state.speed, state.throttle);
 }
 
-// --- RESULTS ---
+// ----------------------------------------------------------------
+//  RESULTS (Stage 4)
+// ----------------------------------------------------------------
 function showResults() {
+  stopEngineSound();
   const el = document.getElementById('message-box');
   const s = state;
 
-  let totalScore = 0;
-  let breakdown = '';
-  const onMark = s.markAccuracy >= 0;
-  const pass = s.markAccuracy > 0;
-
-  // Mark accuracy (max 40 pts)
+  // Mark accuracy → up to 40 pts
   const markPts = Math.round(s.markAccuracy * 0.4);
-  totalScore += markPts;
-  breakdown += `<div>Mark Accuracy: ${s.markAccuracy.toFixed(1)}% → <b>${markPts}/40 pts</b>${s.markAccuracy <= 0 ? ' <span class="penalty">MISSED!</span>' : ''}</div>`;
-
-  // Return accuracy (max 20 pts)
+  // Return accuracy → up to 20 pts
   const retPts = Math.round(s.reverseAccuracy * 0.2);
-  totalScore += retPts;
-  breakdown += `<div>Return to One: ${s.reverseAccuracy.toFixed(1)}% → <b>${retPts}/20 pts</b></div>`;
 
-  // Penalties
-  let penalties = 0;
-  let penaltyText = '';
-  if (s.honkPenalty) { penalties += 10; penaltyText += '<div class="penalty">-10: Failed to honk twice before reversing</div>'; }
-  if (s.reverseTooSlow) { penalties += 10; penaltyText += '<div class="penalty">-10: Took too long to reverse back</div>'; }
-  if (s.reverseTooFast) { penalties += 10; penaltyText += `<div class="penalty">-10: Reversed too fast (${s.reverseMaxSpeed.toFixed(1)} mph)</div>`; }
-
-  // Mode bonus (max 40 pts)
-  let modePts = 0;
-  let modeText = '';
-  switch(s.mode) {
+  // Mode-specific → up to 40 pts
+  let modePts = 0, modeLabel = '';
+  switch (s.mode) {
     case 'speed':
       modePts = Math.max(0, Math.round(40 - s.takeTime * 1.5));
-      modeText = `Speed Bonus (${s.takeTime.toFixed(1)}s): <b>${modePts}/40 pts</b>`;
+      modeLabel = `Speed Bonus (${s.takeTime.toFixed(1)}s): <b>${modePts}/40 pts</b>`;
       break;
     case 'smooth':
       modePts = Math.round(s.smoothnessScore * 0.4);
-      modeText = `Smoothness: ${s.smoothnessScore.toFixed(0)}% → <b>${modePts}/40 pts</b>`;
+      modeLabel = `Smoothness: ${s.smoothnessScore.toFixed(0)}% &rarr; <b>${modePts}/40 pts</b>`;
       break;
     case 'exactmph':
       modePts = Math.round((s.exactMPHAccuracy || 0) * 0.4);
-      modeText = `Exact MPH (target ${s.targetMPH}, hit ${s.speedAtCheckpoint.toFixed(1)}): <b>${modePts}/40 pts</b>`;
+      modeLabel = `Exact MPH (target ${s.targetMPH}, hit ${s.speedAtCheckpoint.toFixed(1)}): <b>${modePts}/40 pts</b>`;
       break;
-    default:
-      // Standard: blend of time and smoothness
+    default: {
       const timePts = Math.max(0, Math.round(20 - s.takeTime * 0.8));
       const smoothPts = Math.round(s.smoothnessScore * 0.2);
       modePts = timePts + smoothPts;
-      modeText = `Performance: <b>${modePts}/40 pts</b>`;
+      modeLabel = `Performance (time + smoothness): <b>${modePts}/40 pts</b>`;
+    }
   }
-  totalScore += modePts;
-  breakdown += `<div>${modeText}</div>`;
-  totalScore -= penalties;
-  totalScore = Math.max(0, totalScore);
+
+  // Penalties
+  let penalties = 0, penaltyHTML = '';
+  if (s.honkPenalty)    { penalties += PENALTY_POINTS; penaltyHTML += `<div class="penalty">-${PENALTY_POINTS}: Failed to honk twice before reversing</div>`; }
+  if (s.reverseTooSlow) { penalties += PENALTY_POINTS; penaltyHTML += `<div class="penalty">-${PENALTY_POINTS}: Took too long to reverse (&gt;${PENALTY_SLOW_TIME}s)</div>`; }
+  if (s.reverseTooFast) { penalties += PENALTY_POINTS; penaltyHTML += `<div class="penalty">-${PENALTY_POINTS}: Reversed too fast (${s.reverseMaxSpeed.toFixed(1)} mph &gt; ${PENALTY_FAST_MPH})</div>`; }
+
+  let total = Math.max(0, markPts + retPts + modePts - penalties);
 
   let grade = 'F';
-  if (totalScore >= 90) grade = 'A+';
-  else if (totalScore >= 80) grade = 'A';
-  else if (totalScore >= 70) grade = 'B';
-  else if (totalScore >= 60) grade = 'C';
-  else if (totalScore >= 40) grade = 'D';
+  if (total >= 95) grade = 'A+';
+  else if (total >= 85) grade = 'A';
+  else if (total >= 75) grade = 'B+';
+  else if (total >= 65) grade = 'B';
+  else if (total >= 55) grade = 'C';
+  else if (total >= 40) grade = 'D';
 
   el.innerHTML = `
     <h2>TAKE COMPLETE</h2>
-    <div class="score">${totalScore}/100 — Grade: ${grade}</div>
-    <div style="text-align:left; margin:15px 0; font-size:14px; line-height:1.8">
-      ${breakdown}
-      ${penaltyText}
+    <div class="score">${total}/100 &mdash; ${grade}</div>
+    <div class="breakdown">
+      <div>Mark Accuracy: ${s.markAccuracy.toFixed(1)}% &rarr; <b>${markPts}/40 pts</b>
+        ${s.markAccuracy <= 0 ? ' <span class="penalty">MISSED!</span>' : ''}</div>
+      <div>Return to One: ${s.reverseAccuracy.toFixed(1)}% &rarr; <b>${retPts}/20 pts</b></div>
+      <div>${modeLabel}</div>
+      ${penaltyHTML}
     </div>
-    <div style="font-size:13px; color:#888; margin-bottom:10px">
-      Top Speed: ${s.maxSpeedHit.toFixed(1)} mph &nbsp;|&nbsp; Time: ${s.takeTime.toFixed(1)}s &nbsp;|&nbsp; Mark: ${s.markDistance.toFixed(0)} ft
+    <div class="stats">
+      Top Speed: ${s.maxSpeedHit.toFixed(1)} mph &nbsp;|&nbsp;
+      Total Time: ${s.takeTime.toFixed(1)}s &nbsp;|&nbsp;
+      Mark: ${s.markDistance.toFixed(0)} ft
     </div>
+    <button onclick="startGame('${s.mode}')">Play Again</button>
     <button onclick="showMenu()">Back to Menu</button>
   `;
   el.style.display = 'block';
+  document.getElementById('hud').innerHTML = '';
   document.getElementById('controls-help').innerHTML = '';
 }
-window.showMenu = showMenu;
 
-// ============================================================
-// RENDERING
-// ============================================================
+// ================================================================
+//  RENDERING
+// ================================================================
 
-function drawSky(ctx) {
-  const grad = ctx.createLinearGradient(0, 0, 0, H * 0.4);
-  grad.addColorStop(0, '#4a90d9');
-  grad.addColorStop(1, '#87ceeb');
+// ---- Sky (Stage 2) ----
+function drawSky() {
+  const grad = ctx.createLinearGradient(0, 0, 0, HORIZON_Y);
+  grad.addColorStop(0, '#3a78c2');
+  grad.addColorStop(0.6, '#6aaddf');
+  grad.addColorStop(1, '#a8d8f0');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H * 0.4);
+  ctx.fillRect(0, 0, W, HORIZON_Y + 2);
 
   // Clouds
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  const cloudY = 60;
-  [[100,cloudY,80],[350,cloudY+20,60],[700,cloudY-10,90],[950,cloudY+30,50]].forEach(([x,y,r]) => {
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  const clouds = [[80,45,90],[310,65,65],[580,35,100],[850,55,70],[1050,40,55]];
+  clouds.forEach(([x, y, r]) => {
     ctx.beginPath();
-    ctx.ellipse(x,y,r,r*0.4,0,0,Math.PI*2);
+    ctx.ellipse(x, y, r, r * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + r * 0.4, y - r * 0.15, r * 0.6, r * 0.28, 0, 0, Math.PI * 2);
     ctx.fill();
   });
 }
 
-function drawRoad(ctx) {
-  const horizonY = H * 0.38;
+// ---- Road & Environment (Stage 2 + 3) ----
+function drawRoad() {
   const vanishX = W / 2 + state.posX * -200;
 
   // Ground
-  const groundGrad = ctx.createLinearGradient(0, horizonY, 0, H);
-  groundGrad.addColorStop(0, '#4a7a3a');
-  groundGrad.addColorStop(0.1, '#5a8a4a');
-  groundGrad.addColorStop(1, '#3a6a2a');
-  ctx.fillStyle = groundGrad;
-  ctx.fillRect(0, horizonY, W, H - horizonY);
+  const gGrad = ctx.createLinearGradient(0, HORIZON_Y, 0, H);
+  gGrad.addColorStop(0, '#4a7a3a');
+  gGrad.addColorStop(0.08, '#5a8a4a');
+  gGrad.addColorStop(1, '#3a6a2a');
+  ctx.fillStyle = gGrad;
+  ctx.fillRect(0, HORIZON_Y, W, H - HORIZON_Y);
 
-  // Road surface with perspective
-  const roadTopW = 180;
-  const roadBotW = 900;
-  ctx.fillStyle = '#444';
+  // Road surface
+  const botOffset = state.posX * -50;
+  ctx.fillStyle = '#3c3c3c';
   ctx.beginPath();
-  ctx.moveTo(vanishX - roadTopW/2, horizonY);
-  ctx.lineTo(vanishX + roadTopW/2, horizonY);
-  ctx.lineTo(W/2 + roadBotW/2 + state.posX * -50, H);
-  ctx.lineTo(W/2 - roadBotW/2 + state.posX * -50, H);
+  ctx.moveTo(vanishX - ROAD_TOP_W / 2, HORIZON_Y);
+  ctx.lineTo(vanishX + ROAD_TOP_W / 2, HORIZON_Y);
+  ctx.lineTo(W / 2 + ROAD_BOT_W / 2 + botOffset, H);
+  ctx.lineTo(W / 2 - ROAD_BOT_W / 2 + botOffset, H);
   ctx.closePath();
   ctx.fill();
 
-  // Lane markings (dashed center line)
-  ctx.strokeStyle = '#ff0';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([15, 20]);
-  const dashOffset = (state.roadOffset * 3) % 35;
-  ctx.lineDashOffset = -dashOffset;
+  // Asphalt texture lines
+  ctx.strokeStyle = 'rgba(60,60,60,0.4)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const t = 0.15 + i * 0.14;
+    const y = HORIZON_Y + (H - HORIZON_Y) * t;
+    const rw = ROAD_TOP_W + (ROAD_BOT_W - ROAD_TOP_W) * t;
+    const cx = vanishX + (W / 2 + botOffset - vanishX) * t;
+    ctx.beginPath();
+    ctx.moveTo(cx - rw / 2, y);
+    ctx.lineTo(cx + rw / 2, y);
+    ctx.stroke();
+  }
+
+  // Center dashed yellow line
+  ctx.strokeStyle = '#eec800';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([16, 22]);
+  ctx.lineDashOffset = -(state.roadOffset * 3) % 38;
   ctx.beginPath();
-  ctx.moveTo(vanishX, horizonY);
-  ctx.lineTo(W/2 + state.posX * -50, H);
+  ctx.moveTo(vanishX, HORIZON_Y);
+  ctx.lineTo(W / 2 + botOffset, H);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Road edges
-  ctx.strokeStyle = '#fff';
+  // White edge lines
+  ctx.strokeStyle = '#ddd';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(vanishX - roadTopW/2, horizonY);
-  ctx.lineTo(W/2 - roadBotW/2 + state.posX * -50, H);
+  ctx.moveTo(vanishX - ROAD_TOP_W / 2, HORIZON_Y);
+  ctx.lineTo(W / 2 - ROAD_BOT_W / 2 + botOffset, H);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(vanishX + roadTopW/2, horizonY);
-  ctx.lineTo(W/2 + roadBotW/2 + state.posX * -50, H);
+  ctx.moveTo(vanishX + ROAD_TOP_W / 2, HORIZON_Y);
+  ctx.lineTo(W / 2 + ROAD_BOT_W / 2 + botOffset, H);
   ctx.stroke();
 
-  // THE MARK - red tape on road
-  if (state.phase === PHASE.DRIVING_TO_MARK || state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
+  // ---- Marks on road ----
+  drawRoadMark();
+}
+
+function perspectiveProject(dist, vanishX, botOffset) {
+  const t = Math.max(0.005, dist / 300);
+  const y = HORIZON_Y + (H - HORIZON_Y) * (1 - t);
+  const rw = ROAD_TOP_W + (ROAD_BOT_W - ROAD_TOP_W) * (1 - t);
+  const cx = vanishX + (W / 2 + botOffset - vanishX) * (1 - t);
+  return { y, rw, cx, t };
+}
+
+function drawRoadMark() {
+  const vanishX = W / 2 + state.posX * -200;
+  const botOffset = state.posX * -50;
+
+  // Red mark (driving forward)
+  if (state.phase === PHASE.DRIVING || state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
     const distToMark = state.markDistance - state.posY;
-    if (distToMark > -10 && distToMark < 300) {
-      const t = Math.max(0.01, distToMark / 300);
-      const markY = horizonY + (H - horizonY) * (1 - t);
-      const markW = roadTopW + (roadBotW - roadTopW) * (1 - t);
-      const markCX = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
+    if (distToMark > -15 && distToMark < 300) {
+      const p = perspectiveProject(distToMark, vanishX, botOffset);
+      if (p.t > 0.01) {
+        const threshold = state.markDistance * MARK_THRESHOLD_PCT;
+        const nearMark = Math.abs(distToMark) < threshold;
+        ctx.fillStyle = nearMark ? '#ff2222' : '#ff5555';
+        ctx.globalAlpha = Math.min(1, 0.5 / p.t);
+        const markH = Math.max(2, 5 / p.t);
+        ctx.fillRect(p.cx - p.rw / 2, p.y - markH / 2, p.rw, markH);
+        ctx.globalAlpha = 1;
 
-      ctx.fillStyle = distToMark < state.markDistance * 0.05 ? '#ff4444' : '#ff6666';
-      ctx.globalAlpha = Math.min(1, 1 / t);
-      ctx.fillRect(markCX - markW/2, markY - 2/t, markW, 4/t);
-      ctx.globalAlpha = 1;
+        // MARK label
+        if (p.t > 0.04 && p.t < 0.85) {
+          const fontSize = Math.round(Math.min(48, 14 / p.t));
+          ctx.fillStyle = '#ffe040';
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('MARK', p.cx, p.y - markH / 2 - 4 / p.t);
+        }
+      }
+    }
 
-      // "MARK" label
-      if (t > 0.05 && t < 0.8) {
-        ctx.fillStyle = '#ff0';
-        ctx.font = `${Math.round(14/t)}px bold sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('MARK', markCX, markY - 8/t);
+    // Exact MPH checkpoint line
+    if (state.mode === 'exactmph' && state.phase === PHASE.DRIVING) {
+      const distToCP = state.checkpointDistance - state.posY;
+      if (distToCP > -5 && distToCP < 300) {
+        const p = perspectiveProject(distToCP, vanishX, botOffset);
+        if (p.t > 0.01) {
+          ctx.fillStyle = state.checkpointPassed ? '#44ff44' : '#ffaa00';
+          ctx.globalAlpha = Math.min(0.7, 0.3 / p.t);
+          ctx.fillRect(p.cx - p.rw / 2, p.y - 1, p.rw, Math.max(2, 3 / p.t));
+          ctx.globalAlpha = 1;
+
+          if (p.t > 0.04 && p.t < 0.7) {
+            const fs = Math.round(Math.min(32, 10 / p.t));
+            ctx.fillStyle = '#ffcc00';
+            ctx.font = `bold ${fs}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('CHECKPOINT', p.cx, p.y - 4 / p.t);
+          }
+        }
       }
     }
   }
 
-  // Start mark (one) - for reversing
+  // Green "ONE" mark (reversing)
   if (state.phase === PHASE.REVERSING) {
-    const distToStart = -state.posY;  // since we're reversing, posY > 0, start is at 0
-    const distBehind = state.posY;    // how far behind us
-    // Show it ahead (since we're looking backward effectively... we'll show it on road approaching)
-    const t = Math.max(0.01, distBehind / 300);
+    const distBehind = state.posY; // how far from start
     if (distBehind > 0 && distBehind < 300) {
-      const markY = horizonY + (H - horizonY) * (1 - t);
-      const markW = roadTopW + (roadBotW - roadTopW) * (1 - t);
-      const markCX = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
-      ctx.fillStyle = '#44ff44';
-      ctx.globalAlpha = Math.min(1, 1 / t);
-      ctx.fillRect(markCX - markW/2, markY - 2/t, markW, 4/t);
-      ctx.globalAlpha = 1;
+      const p = perspectiveProject(distBehind, vanishX, botOffset);
+      if (p.t > 0.01) {
+        ctx.fillStyle = '#33ff33';
+        ctx.globalAlpha = Math.min(1, 0.5 / p.t);
+        const markH = Math.max(2, 5 / p.t);
+        ctx.fillRect(p.cx - p.rw / 2, p.y - markH / 2, p.rw, markH);
+        ctx.globalAlpha = 1;
 
-      if (t > 0.05 && t < 0.8) {
-        ctx.fillStyle = '#0f0';
-        ctx.font = `${Math.round(14/t)}px bold sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('ONE', markCX, markY - 8/t);
+        if (p.t > 0.04 && p.t < 0.85) {
+          const fontSize = Math.round(Math.min(48, 14 / p.t));
+          ctx.fillStyle = '#44ff88';
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('ONE', p.cx, p.y - markH / 2 - 4 / p.t);
+        }
       }
     }
   }
 }
 
-function drawBTSCrew(ctx) {
-  const horizonY = H * 0.38;
+// ---- BTS Film Crew (Stage 5) ----
+const CREW = [
+  { side: -1, dist: 40,  type: 'safety' },
+  { side:  1, dist: 50,  type: 'pa' },
+  { side: -1, dist: 80,  type: 'grip' },
+  { side:  1, dist: 85,  type: 'camera' },
+  { side: -1, dist: 150, type: 'director' },
+  { side:  1, dist: 165, type: 'grip' },
+  { side: -1, dist: 225, type: 'sound' },
+  { side:  1, dist: 250, type: 'camera' },
+];
+
+const CREW_COLORS = {
+  grip: '#555', camera: '#333', director: '#7a3020',
+  sound: '#305080', pa: '#508030', safety: '#ee7700'
+};
+
+function drawBTSCrew() {
   const vanishX = W / 2 + state.posX * -200;
+  const botOffset = state.posX * -50;
 
-  // BTS crew members along the sides of the road
-  const crewPositions = [
-    { side: -1, dist: 80, type: 'grip' },
-    { side: 1, dist: 80, type: 'camera' },
-    { side: -1, dist: 150, type: 'director' },
-    { side: 1, dist: 160, type: 'grip' },
-    { side: -1, dist: 220, type: 'sound' },
-    { side: 1, dist: 250, type: 'camera' },
-    { side: -1, dist: 50, type: 'pa' },
-    { side: 1, dist: 40, type: 'safety' },
-  ];
+  CREW.forEach(crew => {
+    const dist = crew.dist - state.posY;
+    if (dist < -20 || dist > 300) return;
 
-  crewPositions.forEach(crew => {
-    const distFromCar = crew.dist - state.posY;
-    if (distFromCar < -20 || distFromCar > 300) return;
+    const p = perspectiveProject(dist, vanishX, botOffset);
+    const scale = (1 / p.t) * 0.15;
+    if (scale < 0.4 || scale > 9) return;
 
-    const t = Math.max(0.02, distFromCar / 300);
-    const roadTopW = 180;
-    const roadBotW = 900;
-    const roadW = roadTopW + (roadBotW - roadTopW) * (1 - t);
-    const cx = vanishX + (W/2 + state.posX * -50 - vanishX) * (1 - t);
-    const y = horizonY + (H - horizonY) * (1 - t);
-    const x = cx + crew.side * (roadW/2 + 30/t);
-    const scale = 1/t * 0.15;
-
-    if (scale < 0.5 || scale > 8) return;
-
-    // Simple person figure
+    const x = p.cx + crew.side * (p.rw / 2 + 30 / p.t);
+    const y = p.y;
     const h = 40 * scale;
     const headR = 5 * scale;
 
-    // Body color by type
-    const colors = {
-      grip: '#555', camera: '#333', director: '#803020',
-      sound: '#305080', pa: '#508030', safety: '#ff8800'
-    };
-    ctx.fillStyle = colors[crew.type] || '#555';
-
     // Body
-    ctx.fillRect(x - 4*scale, y - h + headR*2, 8*scale, h - headR*2);
+    ctx.fillStyle = CREW_COLORS[crew.type] || '#555';
+    ctx.fillRect(x - 4 * scale, y - h + headR * 2, 8 * scale, h - headR * 2);
+
     // Head
     ctx.beginPath();
-    ctx.arc(x, y - h, headR, 0, Math.PI*2);
+    ctx.arc(x, y - h, headR, 0, Math.PI * 2);
     ctx.fillStyle = '#ddb89a';
     ctx.fill();
 
-    // Camera on tripod for camera crew
+    // Legs
+    ctx.strokeStyle = CREW_COLORS[crew.type] || '#555';
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(x - 2 * scale, y);
+    ctx.lineTo(x - 4 * scale, y + 5 * scale);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 2 * scale, y);
+    ctx.lineTo(x + 4 * scale, y + 5 * scale);
+    ctx.stroke();
+
+    // Camera on tripod
     if (crew.type === 'camera') {
-      ctx.fillStyle = '#222';
-      ctx.fillRect(x + 6*scale, y - h + 10*scale, 12*scale, 8*scale);
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = scale;
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(x + 6 * scale, y - h + 10 * scale, 12 * scale, 8 * scale);
+      // Lens
+      ctx.fillStyle = '#335';
       ctx.beginPath();
-      ctx.moveTo(x + 12*scale, y - h + 18*scale);
-      ctx.lineTo(x + 6*scale, y);
+      ctx.arc(x + 6 * scale, y - h + 14 * scale, 3 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      // Tripod legs
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = Math.max(1, scale);
+      ctx.beginPath();
+      ctx.moveTo(x + 12 * scale, y - h + 18 * scale);
+      ctx.lineTo(x + 4 * scale, y);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(x + 12*scale, y - h + 18*scale);
-      ctx.lineTo(x + 18*scale, y);
+      ctx.moveTo(x + 12 * scale, y - h + 18 * scale);
+      ctx.lineTo(x + 20 * scale, y);
       ctx.stroke();
     }
 
     // Director's chair
     if (crew.type === 'director') {
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(x - 12*scale, y - 15*scale, 10*scale, 15*scale);
+      ctx.fillStyle = '#6B3310';
+      ctx.fillRect(x - 14 * scale, y - 16 * scale, 12 * scale, 16 * scale);
+      // Chair back
+      ctx.fillStyle = '#2a5020';
+      ctx.fillRect(x - 13 * scale, y - 15 * scale, 10 * scale, 6 * scale);
       ctx.fillStyle = '#fff';
-      ctx.font = `${Math.max(6, 6*scale)}px sans-serif`;
+      ctx.font = `bold ${Math.max(6, 5 * scale)}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText('DIR', x - 7*scale, y - 6*scale);
+      ctx.fillText('DIR', x - 8 * scale, y - 10 * scale);
     }
 
-    // Safety vest marking
+    // Sound boom mic
+    if (crew.type === 'sound') {
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = Math.max(1, 1.5 * scale);
+      ctx.beginPath();
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x + crew.side * 20 * scale, y - h - 15 * scale);
+      ctx.stroke();
+      // Mic fuzzy
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.ellipse(x + crew.side * 20 * scale, y - h - 15 * scale, 4 * scale, 2.5 * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // PA walkie-talkie
+    if (crew.type === 'pa') {
+      ctx.fillStyle = '#222';
+      ctx.fillRect(x + 5 * scale, y - h + 14 * scale, 3 * scale, 8 * scale);
+    }
+
+    // Safety vest stripes
     if (crew.type === 'safety') {
-      ctx.strokeStyle = '#ffff00';
+      ctx.strokeStyle = '#ffee00';
       ctx.lineWidth = 2 * scale;
-      ctx.strokeRect(x - 4*scale, y - h + headR*2 + 3*scale, 8*scale, 10*scale);
+      ctx.strokeRect(x - 4 * scale, y - h + headR * 2 + 2 * scale, 8 * scale, 12 * scale);
+      // Extra horizontal stripe
+      ctx.beginPath();
+      ctx.moveTo(x - 4 * scale, y - h + headR * 2 + 8 * scale);
+      ctx.lineTo(x + 4 * scale, y - h + headR * 2 + 8 * scale);
+      ctx.stroke();
     }
   });
 }
 
-function drawDashboard(ctx) {
-  const dashY = H * 0.6;
-
-  // Dashboard base
-  const dashGrad = ctx.createLinearGradient(0, dashY, 0, H);
-  dashGrad.addColorStop(0, '#2a2a2a');
-  dashGrad.addColorStop(0.3, '#1a1a1a');
-  dashGrad.addColorStop(1, '#111');
-  ctx.fillStyle = dashGrad;
+// ---- Side Windows & A-Pillars (Stage 1) ----
+function drawSideWindows() {
+  // Left A-pillar + window
+  ctx.fillStyle = '#161616';
   ctx.beginPath();
-  ctx.moveTo(0, dashY + 40);
-  ctx.quadraticCurveTo(W/2, dashY - 20, W, dashY + 40);
+  ctx.moveTo(0, H * 0.12);
+  ctx.lineTo(85, H * 0.06);
+  ctx.lineTo(85, H * 0.65);
+  ctx.lineTo(0, H * 0.72);
+  ctx.closePath();
+  ctx.fill();
+
+  // Left glass
+  ctx.fillStyle = 'rgba(120,190,230,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(4, H * 0.14);
+  ctx.lineTo(78, H * 0.08);
+  ctx.lineTo(78, H * 0.60);
+  ctx.lineTo(4, H * 0.66);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right A-pillar + window
+  ctx.fillStyle = '#161616';
+  ctx.beginPath();
+  ctx.moveTo(W, H * 0.12);
+  ctx.lineTo(W - 85, H * 0.06);
+  ctx.lineTo(W - 85, H * 0.65);
+  ctx.lineTo(W, H * 0.72);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right glass
+  ctx.fillStyle = 'rgba(120,190,230,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(W - 4, H * 0.14);
+  ctx.lineTo(W - 78, H * 0.08);
+  ctx.lineTo(W - 78, H * 0.60);
+  ctx.lineTo(W - 4, H * 0.66);
+  ctx.closePath();
+  ctx.fill();
+
+  // A-pillars (structural bars)
+  ctx.fillStyle = '#1e1e1e';
+  ctx.fillRect(80, H * 0.04, 14, H * 0.62);
+  ctx.fillRect(W - 94, H * 0.04, 14, H * 0.62);
+}
+
+// ---- Rearview Mirror (Stage 1) ----
+function drawRearviewMirror() {
+  const mx = W / 2, my = H * 0.075;
+  const mw = 150, mh = 52;
+
+  // Housing
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.ellipse(mx, my, mw / 2 + 6, mh / 2 + 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mirror surface
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(mx, my, mw / 2, mh / 2, 0, 0, Math.PI * 2);
+  ctx.clip();
+
+  const mirGrad = ctx.createLinearGradient(mx - mw / 2, my - mh / 2, mx + mw / 2, my + mh / 2);
+  mirGrad.addColorStop(0, '#5a8aaa');
+  mirGrad.addColorStop(0.4, '#6a7a88');
+  mirGrad.addColorStop(1, '#4a5a68');
+  ctx.fillStyle = mirGrad;
+  ctx.fillRect(mx - mw / 2, my - mh / 2, mw, mh);
+
+  // Road reflection
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.moveTo(mx - 12, my - 6);
+  ctx.lineTo(mx + 12, my - 6);
+  ctx.lineTo(mx + 45, my + mh / 2);
+  ctx.lineTo(mx - 45, my + mh / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Yellow dashes in mirror
+  ctx.strokeStyle = '#cc9';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  ctx.moveTo(mx, my - 4);
+  ctx.lineTo(mx, my + mh / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.restore();
+
+  // Mount
+  ctx.fillStyle = '#292929';
+  ctx.fillRect(mx - 3, my + mh / 2, 6, 18);
+  ctx.strokeStyle = '#292929';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(mx, my + mh / 2 + 18);
+  ctx.lineTo(mx, my + mh / 2 + 34);
+  ctx.stroke();
+}
+
+// ---- Dashboard (Stage 1 + 2) ----
+function drawDashboard() {
+  const dashY = H * 0.60;
+
+  // Dashboard body
+  const dGrad = ctx.createLinearGradient(0, dashY, 0, H);
+  dGrad.addColorStop(0, '#2d2d2d');
+  dGrad.addColorStop(0.15, '#222');
+  dGrad.addColorStop(0.5, '#1a1a1a');
+  dGrad.addColorStop(1, '#111');
+  ctx.fillStyle = dGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, dashY + 45);
+  ctx.quadraticCurveTo(W / 2, dashY - 25, W, dashY + 45);
   ctx.lineTo(W, H);
   ctx.lineTo(0, H);
   ctx.closePath();
   ctx.fill();
 
-  // Dashboard top trim
+  // Top trim highlight
   ctx.strokeStyle = '#444';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(0, dashY + 40);
-  ctx.quadraticCurveTo(W/2, dashY - 20, W, dashY + 40);
+  ctx.moveTo(0, dashY + 45);
+  ctx.quadraticCurveTo(W / 2, dashY - 25, W, dashY + 45);
   ctx.stroke();
 
+  // Leather texture dots
+  ctx.fillStyle = 'rgba(255,255,255,0.015)';
+  for (let i = 0; i < 50; i++) {
+    const dx = 100 + Math.random() * (W - 200);
+    const dy = dashY + 50 + Math.random() * 80;
+    ctx.beginPath();
+    ctx.arc(dx, dy, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // Vents
-  [W*0.2, W*0.8].forEach(vx => {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(vx - 30, dashY + 15, 60, 20);
-    for (let i = 0; i < 5; i++) {
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 1;
+  [W * 0.18, W * 0.82].forEach(vx => {
+    ctx.fillStyle = '#0e0e0e';
+    const vw = 65, vh = 22;
+    ctx.beginPath();
+    ctx.roundRect(vx - vw / 2, dashY + 18, vw, vh, 3);
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 6; i++) {
       ctx.beginPath();
-      ctx.moveTo(vx - 28, dashY + 18 + i*4);
-      ctx.lineTo(vx + 28, dashY + 18 + i*4);
+      ctx.moveTo(vx - vw / 2 + 3, dashY + 20 + i * 3.5);
+      ctx.lineTo(vx + vw / 2 - 3, dashY + 20 + i * 3.5);
       ctx.stroke();
     }
   });
 
-  // Instrument cluster background
-  ctx.fillStyle = '#0a0a0a';
+  // Instrument cluster
+  ctx.fillStyle = '#080808';
   ctx.beginPath();
-  ctx.ellipse(W/2, dashY + 20, 150, 50, 0, 0, Math.PI*2);
+  ctx.ellipse(W / 2, dashY + 22, 155, 52, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#2a2a2a';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Speedometer
-  drawSpeedometer(ctx, W/2, dashY + 20);
+  drawSpeedometer(W / 2, dashY + 22);
 
   // Gear indicator
-  ctx.fillStyle = state.gear === 'R' ? '#ff4444' : '#44ff44';
-  ctx.font = 'bold 22px monospace';
+  ctx.fillStyle = state.gear === 'R' ? '#ff3333' : '#33dd33';
+  ctx.font = 'bold 24px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(state.gear, W/2 + 80, dashY + 30);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(state.gear, W / 2 + 88, dashY + 26);
 
-  // Distance indicator
-  ctx.fillStyle = '#0af';
-  ctx.font = '12px monospace';
-  ctx.fillText(`${state.posY.toFixed(1)} ft`, W/2 - 80, dashY + 30);
+  // Distance
+  ctx.fillStyle = '#0ae';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.abs(state.posY).toFixed(1)} ft`, W / 2 - 88, dashY + 28);
 }
 
-function drawSpeedometer(ctx, cx, cy) {
-  // Speedometer arc
-  const radius = 38;
-  ctx.strokeStyle = '#444';
+function drawSpeedometer(cx, cy) {
+  const radius = 40;
+
+  // Arc background
+  ctx.strokeStyle = '#333';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(cx, cy, radius, Math.PI * 0.8, Math.PI * 2.2);
+  ctx.arc(cx, cy, radius, Math.PI * 0.78, Math.PI * 2.22);
   ctx.stroke();
 
-  // Speed marks
+  // Speed ticks + labels
   for (let mph = 0; mph <= 60; mph += 10) {
-    const angle = Math.PI * 0.8 + (mph / 60) * Math.PI * 1.4;
-    const inner = radius - 8;
+    const angle = Math.PI * 0.78 + (mph / 60) * Math.PI * 1.44;
+    const inner = radius - 9;
     const outer = radius - 2;
-    ctx.strokeStyle = mph <= Math.abs(state.speed) ? '#0f0' : '#333';
-    ctx.lineWidth = 2;
+    const active = mph <= Math.abs(state.speed);
+    ctx.strokeStyle = active ? '#0f0' : '#2a2a2a';
+    ctx.lineWidth = active ? 2.5 : 1.5;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
     ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
     ctx.stroke();
 
-    ctx.fillStyle = '#888';
-    ctx.font = '8px sans-serif';
+    ctx.fillStyle = '#666';
+    ctx.font = '7px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(mph, cx + Math.cos(angle) * (inner - 8), cy + Math.sin(angle) * (inner - 8) + 3);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(mph, cx + Math.cos(angle) * (inner - 9), cy + Math.sin(angle) * (inner - 9));
   }
 
   // Needle
-  const speedAngle = Math.PI * 0.8 + (Math.min(60, Math.abs(state.speed)) / 60) * Math.PI * 1.4;
-  ctx.strokeStyle = '#f00';
+  const speedAngle = Math.PI * 0.78 + (Math.min(60, Math.abs(state.speed)) / 60) * Math.PI * 1.44;
+  ctx.strokeStyle = '#e00';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + Math.cos(speedAngle) * (radius - 5), cy + Math.sin(speedAngle) * (radius - 5));
+  ctx.lineTo(cx + Math.cos(speedAngle) * (radius - 4), cy + Math.sin(speedAngle) * (radius - 4));
   ctx.stroke();
 
-  // Digital speed
+  // Center dot
+  ctx.fillStyle = '#c00';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Digital readout
   ctx.fillStyle = '#0f0';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(`${Math.abs(state.speed).toFixed(0)} MPH`, cx, cy + 18);
+  ctx.textBaseline = 'top';
+  ctx.fillText(`${Math.abs(state.speed).toFixed(0)} MPH`, cx, cy + 12);
 }
 
-function drawSteeringWheel(ctx) {
-  const cx = W / 2;
-  const cy = H - 80;
-  const r = 130;
+// ---- Steering Wheel (Stage 1) ----
+function drawSteeringWheel() {
+  const cx = W / 2, cy = H - 75;
+  const r = 135;
   const angle = state.wheelAngle * Math.PI / 180;
 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(angle);
 
+  // Outer rim shadow
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 22;
+  ctx.beginPath();
+  ctx.arc(0, 2, r, 0, Math.PI * 2);
+  ctx.stroke();
+
   // Wheel rim
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 18;
+  ctx.strokeStyle = '#484848';
+  ctx.lineWidth = 20;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Leather texture
-  ctx.strokeStyle = '#3a3a3a';
-  ctx.lineWidth = 14;
+  // Leather wrap
+  ctx.strokeStyle = '#363636';
+  ctx.lineWidth = 16;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Grip highlights (stitching)
+  ctx.strokeStyle = 'rgba(80,80,80,0.3)';
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, Math.PI * 0.6, Math.PI * 0.9);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, r, -Math.PI * 0.1, Math.PI * 0.2);
   ctx.stroke();
 
   // Spokes
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 10;
-  // Left spoke
-  ctx.beginPath();
-  ctx.moveTo(-r, 0);
-  ctx.lineTo(-30, 0);
-  ctx.stroke();
-  // Right spoke
-  ctx.beginPath();
-  ctx.moveTo(r, 0);
-  ctx.lineTo(30, 0);
-  ctx.stroke();
-  // Bottom spoke
-  ctx.beginPath();
-  ctx.moveTo(0, r);
-  ctx.lineTo(0, 20);
-  ctx.stroke();
+  ctx.strokeStyle = '#5a5a5a';
+  ctx.lineWidth = 11;
+  // Left
+  ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(-32, 0); ctx.stroke();
+  // Right
+  ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(32, 0); ctx.stroke();
+  // Bottom
+  ctx.beginPath(); ctx.moveTo(0, r); ctx.lineTo(0, 22); ctx.stroke();
+
+  // Spoke chrome highlights
+  ctx.strokeStyle = '#6a6a6a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-r + 8, -3); ctx.lineTo(-34, -3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r - 8, -3); ctx.lineTo(34, -3); ctx.stroke();
 
   // Center hub
-  ctx.fillStyle = '#333';
+  ctx.fillStyle = '#2e2e2e';
   ctx.beginPath();
-  ctx.arc(0, 0, 30, 0, Math.PI*2);
+  ctx.arc(0, 0, 32, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#555';
+  ctx.strokeStyle = '#4a4a4a';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Horn button area
-  ctx.fillStyle = '#2a2a2a';
+  // Horn pad
+  ctx.fillStyle = '#252525';
   ctx.beginPath();
-  ctx.arc(0, 0, 18, 0, Math.PI*2);
+  ctx.arc(0, 0, 20, 0, Math.PI * 2);
   ctx.fill();
 
   // Horn icon
-  ctx.fillStyle = '#666';
-  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#5a5a5a';
+  ctx.font = 'bold 9px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('HORN', 0, 0);
@@ -779,279 +1256,238 @@ function drawSteeringWheel(ctx) {
   ctx.restore();
 }
 
-function drawHands(ctx) {
-  const cx = W / 2;
-  const cy = H - 80;
-  const r = 130;
+// ---- Hands (Stage 1) ----
+function drawHands() {
+  const cx = W / 2, cy = H - 75;
+  const r = 135;
   const angle = state.wheelAngle * Math.PI / 180;
 
-  // Left hand at 9 o'clock
-  const lx = cx + Math.cos(Math.PI + angle) * r;
-  const ly = cy + Math.sin(Math.PI + angle) * r;
+  const hands = [
+    { angleOffset: Math.PI, flip: false },   // 9 o'clock
+    { angleOffset: 0, flip: true },           // 3 o'clock
+  ];
 
-  // Right hand at 3 o'clock
-  const rx = cx + Math.cos(0 + angle) * r;
-  const ry = cy + Math.sin(0 + angle) * r;
+  hands.forEach(h => {
+    const hx = cx + Math.cos(h.angleOffset + angle) * r;
+    const hy = cy + Math.sin(h.angleOffset + angle) * r;
 
-  [{ x: lx, y: ly, flip: false }, { x: rx, y: ry, flip: true }].forEach(hand => {
     ctx.save();
-    ctx.translate(hand.x, hand.y);
-    ctx.rotate(angle + (hand.flip ? 0 : Math.PI));
+    ctx.translate(hx, hy);
+    ctx.rotate(angle + (h.flip ? 0 : Math.PI));
 
-    // Wrist / forearm
-    ctx.fillStyle = '#ddb89a';
-    ctx.fillRect(-8, -5, 40, 18);
+    // Forearm
+    ctx.fillStyle = '#d4a87a';
+    ctx.fillRect(-7, -4, 38, 16);
 
     // Palm
     ctx.beginPath();
-    ctx.ellipse(0, 4, 14, 12, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#ddb89a';
+    ctx.ellipse(0, 4, 13, 11, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#d4a87a';
     ctx.fill();
 
-    // Fingers wrapped
-    ctx.fillStyle = '#ccaa88';
+    // Fingers
+    ctx.fillStyle = '#c49a6e';
     for (let i = -1; i <= 1; i++) {
       ctx.beginPath();
-      ctx.ellipse(i * 6, -8, 4, 7, 0, 0, Math.PI*2);
+      ctx.ellipse(i * 5.5, -7, 3.5, 6.5, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // Thumb
     ctx.beginPath();
-    ctx.ellipse(10, 10, 5, 4, 0.3, 0, Math.PI*2);
-    ctx.fillStyle = '#ddb89a';
+    ctx.ellipse(9, 9, 4.5, 3.5, 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = '#d4a87a';
     ctx.fill();
+
+    // Knuckle shadows
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.ellipse(i * 5.5, -3, 2.5, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   });
 }
 
-function drawSideWindows(ctx) {
-  // Left window frame
-  ctx.fillStyle = '#1a1a1a';
-  ctx.beginPath();
-  ctx.moveTo(0, H * 0.15);
-  ctx.lineTo(80, H * 0.08);
-  ctx.lineTo(80, H * 0.65);
-  ctx.lineTo(0, H * 0.7);
-  ctx.closePath();
-  ctx.fill();
-
-  // Left window glass
-  ctx.fillStyle = 'rgba(135,206,235,0.15)';
-  ctx.beginPath();
-  ctx.moveTo(5, H * 0.17);
-  ctx.lineTo(75, H * 0.1);
-  ctx.lineTo(75, H * 0.6);
-  ctx.lineTo(5, H * 0.65);
-  ctx.closePath();
-  ctx.fill();
-
-  // Right window frame
-  ctx.fillStyle = '#1a1a1a';
-  ctx.beginPath();
-  ctx.moveTo(W, H * 0.15);
-  ctx.lineTo(W - 80, H * 0.08);
-  ctx.lineTo(W - 80, H * 0.65);
-  ctx.lineTo(W, H * 0.7);
-  ctx.closePath();
-  ctx.fill();
-
-  // Right window glass
-  ctx.fillStyle = 'rgba(135,206,235,0.15)';
-  ctx.beginPath();
-  ctx.moveTo(W - 5, H * 0.17);
-  ctx.lineTo(W - 75, H * 0.1);
-  ctx.lineTo(W - 75, H * 0.6);
-  ctx.lineTo(W - 5, H * 0.65);
-  ctx.closePath();
-  ctx.fill();
-
-  // A-pillars
-  ctx.fillStyle = '#222';
-  ctx.fillRect(78, H * 0.05, 12, H * 0.6);
-  ctx.fillRect(W - 90, H * 0.05, 12, H * 0.6);
-}
-
-function drawRearviewMirror(ctx) {
-  const mx = W / 2;
-  const my = H * 0.08;
-  const mw = 140;
-  const mh = 50;
-
-  // Mirror housing
-  ctx.fillStyle = '#222';
-  ctx.beginPath();
-  ctx.ellipse(mx, my, mw/2 + 5, mh/2 + 5, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // Mirror surface
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(mx, my, mw/2, mh/2, 0, 0, Math.PI*2);
-  ctx.clip();
-
-  // Mirror reflection - reversed road view
-  const mirrorGrad = ctx.createLinearGradient(mx - mw/2, my - mh/2, mx + mw/2, my + mh/2);
-  mirrorGrad.addColorStop(0, '#5a8aaa');
-  mirrorGrad.addColorStop(0.5, '#667');
-  mirrorGrad.addColorStop(1, '#445');
-  ctx.fillStyle = mirrorGrad;
-  ctx.fillRect(mx - mw/2, my - mh/2, mw, mh);
-
-  // Road in mirror
-  ctx.fillStyle = '#555';
-  ctx.beginPath();
-  ctx.moveTo(mx - 10, my - 5);
-  ctx.lineTo(mx + 10, my - 5);
-  ctx.lineTo(mx + 40, my + mh/2);
-  ctx.lineTo(mx - 40, my + mh/2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
-
-  // Mirror mount
-  ctx.fillStyle = '#333';
-  ctx.fillRect(mx - 3, my + mh/2, 6, 15);
-
-  // Stalk
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(mx, my + mh/2 + 15);
-  ctx.lineTo(mx, my + mh/2 + 30);
-  ctx.stroke();
-}
-
-function drawPIPCamera(ctx) {
+// ---- PIP Camera (Stage 6) ----
+function drawPIP() {
   if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
 
-  const px = W - 220;
-  const py = 10;
-  const pw = 210;
-  const ph = 140;
+  const px = W - 224, py = 10, pw = 214, ph = 142;
 
-  // PIP border
+  // Border
   ctx.fillStyle = '#000';
-  ctx.fillRect(px - 3, py - 3, pw + 6, ph + 6);
-  ctx.strokeStyle = '#f00';
+  ctx.fillRect(px - 4, py - 4, pw + 8, ph + 8);
+  ctx.strokeStyle = '#cc0000';
   ctx.lineWidth = 2;
-  ctx.strokeRect(px - 3, py - 3, pw + 6, ph + 6);
-
-  // "REC" indicator
-  ctx.fillStyle = '#f00';
-  ctx.beginPath();
-  ctx.arc(px + 15, py + 15, 5, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('REC', px + 24, py + 19);
-
-  // Camera name
-  ctx.fillStyle = '#ccc';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'right';
-  ctx.fillText('CAM A - WIDE', px + pw - 5, py + 18);
+  ctx.strokeRect(px - 4, py - 4, pw + 8, ph + 8);
 
   ctx.save();
   ctx.beginPath();
   ctx.rect(px, py, pw, ph);
   ctx.clip();
 
-  // Simplified wide-angle view of the car approaching
-  // Sky
-  const skyGrad = ctx.createLinearGradient(px, py, px, py + ph * 0.35);
-  skyGrad.addColorStop(0, '#4a90d9');
-  skyGrad.addColorStop(1, '#87ceeb');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(px, py, pw, ph * 0.35);
+  // Sky in PIP
+  const pipSkyGrad = ctx.createLinearGradient(px, py, px, py + ph * 0.36);
+  pipSkyGrad.addColorStop(0, '#3a78c2');
+  pipSkyGrad.addColorStop(1, '#87ceeb');
+  ctx.fillStyle = pipSkyGrad;
+  ctx.fillRect(px, py, pw, ph * 0.36);
 
   // Ground
   ctx.fillStyle = '#5a8a4a';
-  ctx.fillRect(px, py + ph * 0.35, pw, ph * 0.65);
+  ctx.fillRect(px, py + ph * 0.36, pw, ph * 0.64);
 
-  // Road from camera perspective
+  // Road
   const rcx = px + pw * 0.5;
-  const roadY = py + ph * 0.35;
-  ctx.fillStyle = '#444';
+  const roadTop = py + ph * 0.36;
+  ctx.fillStyle = '#3c3c3c';
   ctx.beginPath();
-  ctx.moveTo(rcx - 15, roadY);
-  ctx.lineTo(rcx + 15, roadY);
-  ctx.lineTo(rcx + 80, py + ph);
-  ctx.lineTo(rcx - 80, py + ph);
+  ctx.moveTo(rcx - 16, roadTop);
+  ctx.lineTo(rcx + 16, roadTop);
+  ctx.lineTo(rcx + 85, py + ph);
+  ctx.lineTo(rcx - 85, py + ph);
   ctx.closePath();
   ctx.fill();
 
-  // Car in camera view (getting closer as posY increases)
-  const carDist = Math.max(0.1, 1 - state.posY / state.markDistance);
-  const carScale = Math.min(3, 0.3 + (1 - carDist) * 2);
-  const carCY = roadY + (py + ph - roadY) * (1 - carDist * 0.8);
-  const carCX = rcx + state.posX * 20 * carScale;
+  // Center line in PIP
+  ctx.strokeStyle = '#cc9';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]);
+  ctx.beginPath();
+  ctx.moveTo(rcx, roadTop);
+  ctx.lineTo(rcx, py + ph);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
-  // Car shape in PIP
-  ctx.fillStyle = '#1a1a5a';
-  const cw = 16 * carScale;
-  const ch = 10 * carScale;
-  ctx.fillRect(carCX - cw/2, carCY - ch, cw, ch);
-  // Windshield
-  ctx.fillStyle = 'rgba(135,206,235,0.5)';
-  ctx.fillRect(carCX - cw*0.35, carCY - ch + 1, cw*0.7, ch*0.35);
-
-  // The mark in camera view
-  const markInView = py + ph * 0.7;
+  // Mark line in PIP
+  const markLine = py + ph * 0.68;
   ctx.fillStyle = '#f44';
-  ctx.fillRect(rcx - 60, markInView, 120, 2);
+  ctx.fillRect(rcx - 65, markLine, 130, 2);
 
-  // Timecode
-  const tc = ((performance.now() - state.takeStartTime) / 1000);
-  const mm = Math.floor(tc / 60).toString().padStart(2, '0');
-  const ss = Math.floor(tc % 60).toString().padStart(2, '0');
-  const ff = Math.floor((tc % 1) * 24).toString().padStart(2, '0');
-  ctx.fillStyle = '#fff';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(`${mm}:${ss}:${ff}`, px + pw/2, py + ph - 5);
+  // Car in PIP
+  const carDist = Math.max(0.05, 1 - state.posY / state.markDistance);
+  const carScale = Math.min(3.5, 0.25 + (1 - carDist) * 2.5);
+  const carCY = roadTop + (py + ph - roadTop) * (1 - carDist * 0.75);
+  const carCX = rcx + state.posX * 18 * carScale;
+  const cw = 15 * carScale, ch = 9 * carScale;
+
+  // Car body
+  ctx.fillStyle = '#1a1a5a';
+  ctx.fillRect(carCX - cw / 2, carCY - ch, cw, ch);
+  // Roof
+  ctx.fillStyle = '#15154a';
+  ctx.fillRect(carCX - cw * 0.35, carCY - ch - ch * 0.3, cw * 0.7, ch * 0.3);
+  // Windshield
+  ctx.fillStyle = 'rgba(140,210,240,0.5)';
+  ctx.fillRect(carCX - cw * 0.3, carCY - ch + 1, cw * 0.6, ch * 0.3);
+  // Headlights
+  ctx.fillStyle = '#ffa';
+  ctx.fillRect(carCX - cw / 2, carCY - ch + 1, 2 * carScale, 2 * carScale);
+  ctx.fillRect(carCX + cw / 2 - 2 * carScale, carCY - ch + 1, 2 * carScale, 2 * carScale);
 
   ctx.restore();
+
+  // REC indicator
+  state.recBlinkTimer += 1;
+  if (state.recBlinkTimer > 30) {
+    state.recBlink = !state.recBlink;
+    state.recBlinkTimer = 0;
+  }
+  if (state.recBlink) {
+    ctx.fillStyle = '#e00';
+    ctx.beginPath();
+    ctx.arc(px + 14, py + 14, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('REC', px + 23, py + 18);
+
+  // Camera label
+  ctx.fillStyle = '#bbb';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('CAM A - WIDE', px + pw - 6, py + 17);
+
+  // Timecode
+  const elapsed = (performance.now() - state.takeStartTime) / 1000;
+  const mm = Math.floor(elapsed / 60).toString().padStart(2, '0');
+  const ss = Math.floor(elapsed % 60).toString().padStart(2, '0');
+  const ff = Math.floor((elapsed % 1) * 24).toString().padStart(2, '0');
+  ctx.fillStyle = '#ddd';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${mm}:${ss}:${ff}`, px + pw / 2, py + ph - 5);
 }
 
-function drawHUD(ctx) {
+// ---- Windshield Overlay ----
+function drawWindshieldTint() {
+  // Subtle tint across windshield area
+  ctx.fillStyle = 'rgba(180,220,255,0.025)';
+  ctx.fillRect(94, 0, W - 188, H * 0.60);
+
+  // Very faint dirt specks
+  ctx.fillStyle = 'rgba(200,180,140,0.015)';
+  const specks = [[250, 180], [680, 120], [420, 250], [900, 200], [550, 90]];
+  specks.forEach(([sx, sy]) => {
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ---- HUD (overlays via DOM) ----
+function updateHUD() {
   if (state.phase === PHASE.MENU || state.phase === PHASE.RESULTS) return;
 
   const el = document.getElementById('hud');
   const distToMark = state.markDistance - state.posY;
-  let hudText = '';
+  let html = '';
 
-  hudText += `<div style="font-size:16px;color:#f90;font-weight:bold">${state.mode.toUpperCase()} TAKE</div>`;
+  // Mode label
+  const modeNames = { standard: 'STANDARD TAKE', speed: 'SPEED RUN', smooth: 'SMOOTH OPERATOR', exactmph: 'EXACT MPH' };
+  html += `<div style="font-size:16px;color:#f90;font-weight:bold;letter-spacing:1px">${modeNames[state.mode]}</div>`;
 
-  if (state.phase === PHASE.DRIVING_TO_MARK) {
-    hudText += `<div>Distance to Mark: <b style="color:${distToMark < 20 ? '#f44' : '#0f0'}">${distToMark.toFixed(1)} ft</b></div>`;
+  if (state.phase === PHASE.DRIVING) {
+    const distColor = distToMark < 20 ? '#f44' : distToMark < 50 ? '#fa0' : '#4f4';
+    html += `<div>Distance to Mark: <b style="color:${distColor}">${Math.max(0, distToMark).toFixed(1)} ft</b></div>`;
+
     if (state.mode === 'exactmph') {
-      hudText += `<div>Target: <b style="color:#ff0">${state.targetMPH} MPH</b> at checkpoint</div>`;
+      html += `<div>Target: <b style="color:#ff0">${state.targetMPH} MPH</b> at checkpoint</div>`;
       if (!state.checkpointPassed) {
         const distToCP = state.checkpointDistance - state.posY;
-        hudText += `<div>Checkpoint in: ${distToCP.toFixed(0)} ft</div>`;
+        html += `<div>Checkpoint in: <b>${Math.max(0, distToCP).toFixed(0)} ft</b></div>`;
       } else {
-        hudText += `<div style="color:#0f0">Checkpoint: ${state.speedAtCheckpoint.toFixed(1)} MPH ✓</div>`;
+        html += `<div style="color:#4f4">Checkpoint hit: ${state.speedAtCheckpoint.toFixed(1)} MPH (accuracy: ${state.exactMPHAccuracy.toFixed(0)}%)</div>`;
       }
     }
   } else if (state.phase === PHASE.STOPPED_ON_MARK || state.phase === PHASE.HONKING) {
-    hudText += `<div style="color:#ff0;font-size:18px">ON MARK! Accuracy: ${state.markAccuracy.toFixed(1)}%</div>`;
-    hudText += `<div>Honk horn TWICE (Space) to begin reverse</div>`;
-    hudText += `<div>Honks: ${state.honkCount}/2</div>`;
+    if (state.markAccuracy > 0) {
+      html += `<div style="color:#ff0;font-size:18px;font-weight:bold">ON MARK! ${state.markAccuracy.toFixed(1)}%</div>`;
+    } else {
+      html += `<div style="color:#f44;font-size:18px;font-weight:bold">MISSED!</div>`;
+    }
+    html += `<div>Honk horn TWICE (Space) to begin reverse</div>`;
+    html += `<div>Honks: <b>${state.honkCount}/${HONKS_REQUIRED}</b></div>`;
   } else if (state.phase === PHASE.REVERSING) {
-    hudText += `<div style="color:#f44">REVERSING TO ONE</div>`;
-    hudText += `<div>Distance to Start: <b>${state.posY.toFixed(1)} ft</b></div>`;
+    html += `<div style="color:#f55;font-size:16px;font-weight:bold">REVERSING TO ONE</div>`;
+    html += `<div>Distance to Start: <b>${state.posY.toFixed(1)} ft</b></div>`;
     const elapsed = (performance.now() - state.reverseStartTime) / 1000;
-    hudText += `<div>Time: ${elapsed.toFixed(1)}s ${elapsed > 15 ? '<span style="color:#f44">HURRY!</span>' : ''}</div>`;
+    const hurry = elapsed > HURRY_TIME;
+    html += `<div>Time: <b>${elapsed.toFixed(1)}s</b> ${hurry ? '<span style="color:#f44;font-weight:bold">HURRY!</span>' : ''}</div>`;
+    html += `<div style="color:#888;font-size:12px">Max reverse speed: ${state.reverseMaxSpeed.toFixed(1)} mph</div>`;
   }
 
-  el.innerHTML = hudText;
+  el.innerHTML = html;
 }
 
-// --- MAIN LOOP ---
+// ================================================================
+//  MAIN GAME LOOP
+// ================================================================
 let lastTime = 0;
 
 function gameLoop(timestamp) {
@@ -1064,26 +1500,23 @@ function gameLoop(timestamp) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  // Draw scene layers
-  drawSky(ctx);
-  drawRoad(ctx);
-  drawBTSCrew(ctx);
-  drawSideWindows(ctx);
-  drawRearviewMirror(ctx);
-  drawDashboard(ctx);
-  drawSteeringWheel(ctx);
-  drawHands(ctx);
-  drawPIPCamera(ctx);
-  drawHUD(ctx);
-
-  // Windshield tint overlay
-  ctx.fillStyle = 'rgba(200,230,255,0.03)';
-  ctx.fillRect(80, 0, W - 160, H * 0.6);
+  // Render layers (back to front)
+  drawSky();
+  drawRoad();
+  drawBTSCrew();
+  drawSideWindows();
+  drawRearviewMirror();
+  drawWindshieldTint();
+  drawDashboard();
+  drawSteeringWheel();
+  drawHands();
+  drawPIP();
+  updateHUD();
 
   requestAnimationFrame(gameLoop);
 }
 
-// Start
+// ---- Boot ----
 showMenu();
 requestAnimationFrame(gameLoop);
 </script>
