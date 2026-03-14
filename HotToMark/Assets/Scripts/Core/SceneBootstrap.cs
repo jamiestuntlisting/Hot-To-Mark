@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using HotToMark.Vehicle;
 using HotToMark.Environment;
 using HotToMark.Camera;
@@ -15,10 +14,7 @@ namespace HotToMark.Core
     /// <summary>
     /// Bootstrap script that builds the entire scene at runtime.
     /// Attach this to an empty GameObject in a blank scene.
-    /// It creates all game objects, wires references, and starts the game.
-    ///
-    /// This allows the game to run from a single empty scene without
-    /// requiring pre-built prefabs or complex scene hierarchy.
+    /// All UI components self-build their own hierarchy.
     /// </summary>
     public class SceneBootstrap : MonoBehaviour
     {
@@ -35,7 +31,6 @@ namespace HotToMark.Core
             // ---- Root objects ----
             var carRoot = new GameObject("Car");
             var environmentRoot = new GameObject("Environment");
-            var uiRoot = CreateUIRoot();
             var audioRoot = new GameObject("Audio");
 
             // ---- Car + Physics (Stage 1+2) ----
@@ -50,14 +45,22 @@ namespace HotToMark.Core
             // Steering wheel component
             if (cockpitBuilder.steeringWheelTransform != null)
             {
-                var steeringWheel = cockpitBuilder.steeringWheelTransform
+                cockpitBuilder.steeringWheelTransform
                     .gameObject.AddComponent<SteeringWheel>();
             }
 
-            // Speedometer
+            // Speedometer (data display)
             var speedoObj = new GameObject("Speedometer");
             speedoObj.transform.SetParent(cockpitObj.transform);
             speedoObj.AddComponent<Speedometer>();
+
+            // Procedural speedometer dial (3D gauge)
+            var speedoDialObj = new GameObject("SpeedometerDial");
+            speedoDialObj.transform.SetParent(cockpitObj.transform);
+            speedoDialObj.transform.localPosition = new Vector3(0, 0.62f, 0.65f);
+            speedoDialObj.transform.localScale = Vector3.one * 0.8f;
+            var speedoBuilder = speedoDialObj.AddComponent<SpeedometerBuilder>();
+            speedoBuilder.Build();
 
             // ---- Main Camera (Stage 1) ----
             var mainCamObj = new GameObject("MainCamera");
@@ -67,9 +70,7 @@ namespace HotToMark.Core
             mainCam.fieldOfView = 65;
             mainCam.nearClipPlane = 0.1f;
             mainCam.farClipPlane = 500f;
-            var cockpitCam = mainCamObj.AddComponent<CockpitCamera>();
-
-            // Audio listener on main camera
+            mainCamObj.AddComponent<CockpitCamera>();
             mainCamObj.AddComponent<AudioListener>();
 
             // ---- Road (Stage 2) ----
@@ -109,7 +110,6 @@ namespace HotToMark.Core
             audioRoot.AddComponent<AudioSource>();
             var engineAudio = audioRoot.AddComponent<EngineAudioController>();
 
-            // Ambient film set audio generator (procedural)
             var ambientObj = new GameObject("AmbientAudio");
             ambientObj.transform.SetParent(audioRoot.transform);
             ambientObj.AddComponent<AmbientAudioGenerator>();
@@ -120,13 +120,34 @@ namespace HotToMark.Core
 
             // ---- Input (Stage 1) ----
             var inputObj = new GameObject("InputManager");
-            var inputManager = inputObj.AddComponent<TouchInputManager>();
+            inputObj.AddComponent<TouchInputManager>();
 
-            // ---- UI (Stage 4+7) ----
-            var mainMenu = BuildMainMenuUI(uiRoot.transform);
-            var resultsScreen = BuildResultsUI(uiRoot.transform);
-            var hud = BuildHUDUI(uiRoot.transform);
-            var touchControls = BuildTouchControlsUI(uiRoot.transform);
+            // ---- UI Canvas ----
+            var uiRoot = CreateUICanvas();
+
+            // UI components self-build their hierarchies in Awake()
+            var menuObj = new GameObject("MainMenu");
+            menuObj.transform.SetParent(uiRoot.transform, false);
+            menuObj.AddComponent<RectTransform>().SetFullStretch();
+            var mainMenu = menuObj.AddComponent<MainMenuUI>();
+
+            var resultsObj = new GameObject("ResultsScreen");
+            resultsObj.transform.SetParent(uiRoot.transform, false);
+            resultsObj.AddComponent<RectTransform>().SetFullStretch();
+            var resultsScreen = resultsObj.AddComponent<ResultsScreenUI>();
+
+            var hudObj = new GameObject("HUD");
+            hudObj.transform.SetParent(uiRoot.transform, false);
+            hudObj.AddComponent<RectTransform>().SetFullStretch();
+            var hud = hudObj.AddComponent<HUDManager>();
+
+            var touchObj = new GameObject("TouchControls");
+            touchObj.transform.SetParent(uiRoot.transform, false);
+            touchObj.AddComponent<RectTransform>().SetFullStretch();
+            touchObj.AddComponent<TouchControlsUI>();
+
+            // ---- PIP Display (overlay on UI canvas) ----
+            BuildPIPDisplay(uiRoot.transform, pipController);
 
             // ---- GameManager (wires everything) ----
             var gmObj = new GameObject("GameManager");
@@ -144,14 +165,6 @@ namespace HotToMark.Core
             gm.crewManager = crewManager;
             gm.pipCamera = pipController;
 
-            // ---- Procedural Speedometer Dial (Stage 2) ----
-            var speedoDialObj = new GameObject("SpeedometerDial");
-            speedoDialObj.transform.SetParent(cockpitObj.transform);
-            speedoDialObj.transform.localPosition = new Vector3(0, 0.62f, 0.65f);
-            speedoDialObj.transform.localScale = Vector3.one * 0.8f;
-            var speedoBuilder = speedoDialObj.AddComponent<SpeedometerBuilder>();
-            speedoBuilder.Build();
-
             // ---- Visual Polish (Stage 8) ----
             var polishObj = new GameObject("VisualPolish");
             polishObj.AddComponent<VisualPolish>();
@@ -160,217 +173,76 @@ namespace HotToMark.Core
             var perfObj = new GameObject("PerformanceOptimizer");
             perfObj.AddComponent<PerformanceOptimizer>();
 
-            // ---- Skybox ----
+            // ---- Skybox & Lighting ----
             SetupSkybox();
-
-            // ---- Lighting ----
             SetupLighting();
         }
 
-        // ---- UI Builders ----
-
-        private GameObject CreateUIRoot()
+        private GameObject CreateUICanvas()
         {
             var canvasObj = new GameObject("UICanvas");
             var canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
-            canvasObj.AddComponent<CanvasScaler>().uiScaleMode =
-                CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasObj.GetComponent<CanvasScaler>().referenceResolution =
-                new Vector2(1170, 2532);
+
+            var scaler = canvasObj.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1170, 2532);
+            scaler.matchWidthOrHeight = 0.5f;
+
             canvasObj.AddComponent<GraphicRaycaster>();
             return canvasObj;
         }
 
-        private MainMenuUI BuildMainMenuUI(Transform parent)
+        private void BuildPIPDisplay(Transform uiParent, PIPCameraController pipController)
         {
-            var panelObj = CreatePanel("MenuPanel", parent,
-                new Color(0.03f, 0.03f, 0.03f, 0.94f));
+            // PIP container — upper-right corner
+            var pipPanel = new GameObject("PIPPanel");
+            pipPanel.transform.SetParent(uiParent, false);
+            var pipRect = pipPanel.AddComponent<RectTransform>();
+            pipRect.anchorMin = new Vector2(0.62f, 0.72f);
+            pipRect.anchorMax = new Vector2(0.98f, 0.98f);
+            pipRect.offsetMin = Vector2.zero;
+            pipRect.offsetMax = Vector2.zero;
 
-            var menuUI = panelObj.AddComponent<MainMenuUI>();
+            // Black border
+            var border = pipPanel.AddComponent<Image>();
+            border.color = new Color(0.05f, 0.05f, 0.05f);
 
-            // Title
-            var title = CreateText("Title", panelObj.transform,
-                "HOT TO MARK", 46, new Color(1f, 0.6f, 0));
-            title.transform.localPosition = new Vector3(0, 350, 0);
-            var titleTMP = title.GetComponent<TextMeshProUGUI>();
-            titleTMP.fontStyle = FontStyles.Bold;
+            // RawImage for the PIP RenderTexture
+            var displayObj = new GameObject("PIPDisplay");
+            displayObj.transform.SetParent(pipPanel.transform, false);
+            var displayRect = displayObj.AddComponent<RectTransform>();
+            displayRect.anchorMin = new Vector2(0.02f, 0.05f);
+            displayRect.anchorMax = new Vector2(0.98f, 0.85f);
+            displayRect.offsetMin = Vector2.zero;
+            displayRect.offsetMax = Vector2.zero;
+            var rawImg = displayObj.AddComponent<RawImage>();
 
-            // Subtitle
-            var subtitle = CreateText("Subtitle", panelObj.transform,
-                "The Stunt Driving Game", 15, new Color(0.75f, 0.75f, 0.75f));
-            subtitle.transform.localPosition = new Vector3(0, 290, 0);
-            var subTMP = subtitle.GetComponent<TextMeshProUGUI>();
-            subTMP.fontStyle = FontStyles.Italic;
+            // REC dot
+            var recObj = UIFactory.CreateImage("RECDot", pipPanel.transform,
+                new Color(1f, 0, 0));
+            UIFactory.SetAnchors(recObj, new Vector2(0.04f, 0.88f), new Vector2(0.08f, 0.96f));
 
-            // Mode buttons
-            float yStart = 180;
-            string[] names = { "Standard Take", "Speed Run", "Smooth Operator", "Exact MPH" };
-            string[] descs = {
-                "Drive to the mark, stop accurately, reverse to one.",
-                "Complete the entire take as fast as possible.",
-                "Minimize jerky inputs. Be cinematic.",
-                "Hit exactly the target speed at the checkpoint."
-            };
+            var recLabel = UIFactory.CreateText("RECLabel", pipPanel.transform,
+                "REC", 8, Color.red, TMPro.FontStyles.Bold, TMPro.TextAlignmentOptions.Left);
+            UIFactory.SetAnchors(recLabel, new Vector2(0.1f, 0.86f), new Vector2(0.3f, 0.98f));
 
-            Button[] buttons = new Button[4];
-            for (int i = 0; i < 4; i++)
-            {
-                var btn = CreateButton(names[i], panelObj.transform,
-                    new Vector3(0, yStart - i * 110, 0),
-                    new Vector2(400, 55));
-                buttons[i] = btn;
+            // Camera label
+            var camLabel = UIFactory.CreateText("CamLabel", pipPanel.transform,
+                "CAM A - WIDE", 7, new Color(0.8f, 0.8f, 0.8f),
+                TMPro.FontStyles.Normal, TMPro.TextAlignmentOptions.Right);
+            UIFactory.SetAnchors(camLabel, new Vector2(0.5f, 0.86f), new Vector2(0.96f, 0.98f));
 
-                var desc = CreateText($"Desc_{i}", panelObj.transform,
-                    descs[i], 11, new Color(0.55f, 0.55f, 0.55f));
-                desc.transform.localPosition = new Vector3(0, yStart - i * 110 - 38, 0);
-            }
-
-            // Use reflection-free approach: set serialized fields via a helper
-            SetMenuUIFields(menuUI, panelObj, title, subtitle, buttons);
-
-            return menuUI;
+            // Timecode at bottom
+            var timecodeObj = UIFactory.CreateText("Timecode", pipPanel.transform,
+                "00:00:00", 7, new Color(0.9f, 0.9f, 0.9f),
+                TMPro.FontStyles.Normal, TMPro.TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(timecodeObj, new Vector2(0.2f, 0), new Vector2(0.8f, 0.06f));
         }
-
-        private void SetMenuUIFields(MainMenuUI menuUI, GameObject panel,
-            GameObject title, GameObject subtitle, Button[] buttons)
-        {
-            // Since we can't set [SerializeField] directly at runtime,
-            // we use a public init method pattern.
-            // The MainMenuUI.Start() sets text from serialized fields,
-            // but we've already set text on creation. The buttons need wiring.
-
-            // Wire button click events directly
-            GameMode[] modes = {
-                GameMode.Standard, GameMode.SpeedRun,
-                GameMode.SmoothOperator, GameMode.ExactMPH
-            };
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                var mode = modes[i];
-                buttons[i].onClick.AddListener(() => GameManager.Instance.StartGame(mode));
-            }
-        }
-
-        private ResultsScreenUI BuildResultsUI(Transform parent)
-        {
-            var panelObj = CreatePanel("ResultsPanel", parent,
-                new Color(0.03f, 0.03f, 0.03f, 0.92f));
-            panelObj.SetActive(false);
-
-            var resultsUI = panelObj.AddComponent<ResultsScreenUI>();
-            return resultsUI;
-        }
-
-        private HUDManager BuildHUDUI(Transform parent)
-        {
-            var panelObj = new GameObject("HUDPanel");
-            panelObj.transform.SetParent(parent);
-            var rect = panelObj.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0, 1);
-            rect.anchorMax = new Vector2(0.4f, 1);
-            rect.pivot = new Vector2(0, 1);
-            rect.anchoredPosition = new Vector2(15, -15);
-            rect.sizeDelta = new Vector2(400, 200);
-
-            var hudUI = panelObj.AddComponent<HUDManager>();
-            return hudUI;
-        }
-
-        private TouchControlsUI BuildTouchControlsUI(Transform parent)
-        {
-            var panelObj = new GameObject("TouchControls");
-            panelObj.transform.SetParent(parent);
-            panelObj.AddComponent<RectTransform>();
-
-            var touchUI = panelObj.AddComponent<TouchControlsUI>();
-            return touchUI;
-        }
-
-        // ---- UI Helpers ----
-
-        private GameObject CreatePanel(string name, Transform parent, Color bgColor)
-        {
-            var panel = new GameObject(name);
-            panel.transform.SetParent(parent);
-            var rect = panel.AddComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            var img = panel.AddComponent<Image>();
-            img.color = bgColor;
-
-            return panel;
-        }
-
-        private GameObject CreateText(string name, Transform parent,
-            string content, float fontSize, Color color)
-        {
-            var obj = new GameObject(name);
-            obj.transform.SetParent(parent);
-            var rect = obj.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(500, 60);
-
-            var tmp = obj.AddComponent<TextMeshProUGUI>();
-            tmp.text = content;
-            tmp.fontSize = fontSize;
-            tmp.color = color;
-            tmp.alignment = TextAlignmentOptions.Center;
-
-            return obj;
-        }
-
-        private Button CreateButton(string label, Transform parent,
-            Vector3 localPos, Vector2 size)
-        {
-            var btnObj = new GameObject($"Btn_{label}");
-            btnObj.transform.SetParent(parent);
-            var rect = btnObj.AddComponent<RectTransform>();
-            rect.localPosition = localPos;
-            rect.sizeDelta = size;
-
-            var img = btnObj.AddComponent<Image>();
-            img.color = new Color(0.1f, 0.1f, 0.1f);
-
-            var btn = btnObj.AddComponent<Button>();
-            var colors = btn.colors;
-            colors.normalColor = new Color(0.1f, 0.1f, 0.1f);
-            colors.highlightedColor = new Color(1f, 0.6f, 0);
-            colors.pressedColor = new Color(0.8f, 0.5f, 0);
-            btn.colors = colors;
-
-            // Button outline
-            var outline = btnObj.AddComponent<Outline>();
-            outline.effectColor = new Color(1f, 0.6f, 0);
-            outline.effectDistance = new Vector2(2, 2);
-
-            // Label text
-            var textObj = new GameObject("Label");
-            textObj.transform.SetParent(btnObj.transform);
-            var textRect = textObj.AddComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-
-            var tmp = textObj.AddComponent<TextMeshProUGUI>();
-            tmp.text = label;
-            tmp.fontSize = 17;
-            tmp.color = Color.white;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontStyle = FontStyles.Bold;
-
-            return btn;
-        }
-
-        // ---- Environment Setup ----
 
         private void SetupSkybox()
         {
-            // Create a procedural skybox material
             var skyMat = new Material(Shader.Find("Skybox/Procedural"));
             if (skyMat != null)
             {
@@ -384,7 +256,6 @@ namespace HotToMark.Core
 
         private void SetupLighting()
         {
-            // Directional light (sun)
             var sunObj = new GameObject("Sun");
             var sun = sunObj.AddComponent<Light>();
             sun.type = LightType.Directional;
@@ -394,11 +265,24 @@ namespace HotToMark.Core
             sun.shadowStrength = 0.6f;
             sunObj.transform.rotation = Quaternion.Euler(45, -30, 0);
 
-            // Ambient lighting
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.6f, 0.7f, 0.9f);
             RenderSettings.ambientEquatorColor = new Color(0.5f, 0.55f, 0.6f);
             RenderSettings.ambientGroundColor = new Color(0.3f, 0.35f, 0.25f);
+        }
+    }
+
+    /// <summary>
+    /// Extension method to set a RectTransform to full-stretch mode.
+    /// </summary>
+    public static class RectTransformExtensions
+    {
+        public static void SetFullStretch(this RectTransform rect)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
     }
 }

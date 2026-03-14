@@ -7,53 +7,84 @@ namespace HotToMark.UI
 {
     /// <summary>
     /// Stage 1: Visual touch control overlays for iOS.
-    /// Gas pedal zone (right), brake pedal zone (left), horn button (center).
+    /// Self-builds gas/brake pedal zones and horn button at runtime.
     /// These are visual indicators — actual input is handled by TouchInputManager.
     /// </summary>
     public class TouchControlsUI : MonoBehaviour
     {
-        [Header("Pedal Zones")]
-        [SerializeField] private Image gasPedalZone;
-        [SerializeField] private Image brakePedalZone;
-        [SerializeField] private TextMeshProUGUI gasLabel;
-        [SerializeField] private TextMeshProUGUI brakeLabel;
+        private Image gasPedalZone;
+        private Image brakePedalZone;
+        private Image hornImage;
 
-        [Header("Horn Button")]
-        [SerializeField] private Button hornButton;
-        [SerializeField] private Image hornImage;
-
-        [Header("Feedback Colors")]
-        [SerializeField] private Color gasActiveColor = new Color(0.2f, 0.8f, 0.2f, 0.4f);
-        [SerializeField] private Color gasInactiveColor = new Color(0.2f, 0.8f, 0.2f, 0.15f);
-        [SerializeField] private Color brakeActiveColor = new Color(0.8f, 0.2f, 0.2f, 0.4f);
-        [SerializeField] private Color brakeInactiveColor = new Color(0.8f, 0.2f, 0.2f, 0.15f);
+        private readonly Color gasActiveColor = new Color(0.2f, 0.8f, 0.2f, 0.4f);
+        private readonly Color gasInactiveColor = new Color(0.2f, 0.8f, 0.2f, 0.12f);
+        private readonly Color brakeActiveColor = new Color(0.8f, 0.2f, 0.2f, 0.4f);
+        private readonly Color brakeInactiveColor = new Color(0.8f, 0.2f, 0.2f, 0.12f);
 
         private GameState state;
+
+        void Awake()
+        {
+            BuildUI();
+        }
 
         void Start()
         {
             state = GameManager.Instance.state;
+        }
 
-            if (hornButton != null)
+        private void BuildUI()
+        {
+            // Brake zone — left side, bottom
+            var brakeObj = UIFactory.CreateImage("BrakeZone", transform, brakeInactiveColor);
+            UIFactory.SetAnchors(brakeObj, new Vector2(0, 0), new Vector2(0.45f, 0.35f));
+            brakePedalZone = brakeObj.GetComponent<Image>();
+
+            var brakeLabel = UIFactory.CreateText("BrakeLabel", brakeObj.transform,
+                "BRAKE", 14, new Color(1f, 0.3f, 0.3f, 0.6f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(brakeLabel, new Vector2(0, 0), new Vector2(1, 1));
+
+            // Gas zone — right side, bottom
+            var gasObj = UIFactory.CreateImage("GasZone", transform, gasInactiveColor);
+            UIFactory.SetAnchors(gasObj, new Vector2(0.55f, 0), new Vector2(1, 0.35f));
+            gasPedalZone = gasObj.GetComponent<Image>();
+
+            var gasLabel = UIFactory.CreateText("GasLabel", gasObj.transform,
+                "GAS", 14, new Color(0.3f, 1f, 0.3f, 0.6f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(gasLabel, new Vector2(0, 0), new Vector2(1, 1));
+
+            // Horn button — center
+            var hornObj = UIFactory.CreateImage("HornButton", transform,
+                new Color(0.9f, 0.7f, 0.1f, 0.25f));
+            UIFactory.SetAnchors(hornObj, new Vector2(0.38f, 0.35f), new Vector2(0.62f, 0.55f));
+            hornImage = hornObj.GetComponent<Image>();
+
+            var hornLabel = UIFactory.CreateText("HornLabel", hornObj.transform,
+                "HORN", 16, new Color(1f, 0.85f, 0.2f, 0.7f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(hornLabel, new Vector2(0, 0), new Vector2(1, 1));
+
+            // Horn click handler
+            var btn = hornObj.AddComponent<Button>();
+            var colors = btn.colors;
+            colors.normalColor = new Color(0.9f, 0.7f, 0.1f, 0.25f);
+            colors.pressedColor = new Color(1f, 0.85f, 0.2f, 0.6f);
+            btn.colors = colors;
+            btn.onClick.AddListener(() =>
             {
-                hornButton.onClick.AddListener(() =>
-                {
-                    var horn = GameManager.Instance.hornSystem;
-                    if (horn != null) horn.Honk();
-                });
-            }
+                var horn = GameManager.Instance.hornSystem;
+                if (horn != null) horn.Honk();
+            });
         }
 
         void Update()
         {
             if (state == null) return;
 
-            // Visual feedback on pedal zones
-            if (gasPedalZone != null)
-                gasPedalZone.color = state.throttle > 0 ? gasActiveColor : gasInactiveColor;
-
-            if (brakePedalZone != null)
-                brakePedalZone.color = state.brake > 0 ? brakeActiveColor : brakeInactiveColor;
+            gasPedalZone.color = state.throttle > 0 ? gasActiveColor : gasInactiveColor;
+            brakePedalZone.color = state.brake > 0 ? brakeActiveColor : brakeInactiveColor;
         }
     }
 }
