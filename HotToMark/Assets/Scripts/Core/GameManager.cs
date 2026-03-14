@@ -1,6 +1,7 @@
 using UnityEngine;
 using HotToMark.Vehicle;
 using HotToMark.Environment;
+using HotToMark.Camera;
 using HotToMark.Scoring;
 using HotToMark.UI;
 using HotToMark.Audio;
