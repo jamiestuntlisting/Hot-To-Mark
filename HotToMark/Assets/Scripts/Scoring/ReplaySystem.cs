@@ -125,7 +125,7 @@ namespace HotToMark.Scoring
             if (GameManager.Instance != null && GameManager.Instance.carController != null)
             {
                 var car = GameManager.Instance.carController;
-                var worldPos = Vehicle.CarController.FeetToWorldPosition(frame.posX, frame.posY);
+                var worldPos = Vehicle.CarController.FeetToWorldPosition(frame.posY, frame.posX);
                 car.transform.position = worldPos;
             }
 
