@@ -254,7 +254,7 @@ namespace HotToMark.Environment
             vest.transform.SetParent(parent);
             vest.transform.localPosition = new Vector3(0, height * 0.4f, 0);
             vest.transform.localScale = new Vector3(0.42f, height * 0.2f, 0.32f);
-            var vestMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var vestMat = new Material(Shader.Find("Standard"));
             vestMat.color = new Color(1f, 0.5f, 0f);
             vestMat.EnableKeyword("_EMISSION");
             vestMat.SetColor("_EmissionColor", new Color(1f, 0.5f, 0f) * 0.3f);
@@ -269,7 +269,7 @@ namespace HotToMark.Environment
                 stripe.transform.SetParent(parent);
                 stripe.transform.localPosition = new Vector3(0, height * 0.35f + i * 0.15f, 0.17f);
                 stripe.transform.localScale = new Vector3(0.42f, 0.03f, 0.01f);
-                var stripeMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                var stripeMat = new Material(Shader.Find("Standard"));
                 stripeMat.color = new Color(1f, 1f, 0f);
                 stripeMat.EnableKeyword("_EMISSION");
                 stripeMat.SetColor("_EmissionColor", Color.yellow * 0.5f);
@@ -317,7 +317,7 @@ namespace HotToMark.Environment
             var renderer = go.GetComponent<Renderer>();
             if (renderer != null)
             {
-                renderer.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                renderer.material = new Material(Shader.Find("Standard"));
                 renderer.material.color = color;
             }
         }

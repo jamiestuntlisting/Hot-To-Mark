@@ -169,7 +169,7 @@ namespace HotToMark.Environment
             var renderer = go.GetComponent<Renderer>();
             if (renderer != null)
             {
-                renderer.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                renderer.material = new Material(Shader.Find("Standard"));
                 renderer.material.color = color;
             }
         }

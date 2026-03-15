@@ -182,7 +182,7 @@ namespace HotToMark.Vehicle
             var r = go.GetComponent<Renderer>();
             if (r != null)
             {
-                r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                r.material = new Material(Shader.Find("Standard"));
                 r.material.color = color;
             }
         }

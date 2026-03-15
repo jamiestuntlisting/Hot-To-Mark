@@ -239,7 +239,7 @@ namespace HotToMark.Core
             else
             {
                 renderer.material = new Material(
-                    Shader.Find("Universal Render Pipeline/Lit"));
+                    Shader.Find("Standard"));
                 renderer.material.color = fallbackColor;
             }
 

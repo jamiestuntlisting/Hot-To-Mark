@@ -76,9 +76,9 @@ namespace HotToMark.Core
 
         private Material CreateLeatherMaterial()
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var mat = new Material(Shader.Find("Standard"));
             mat.color = new Color(0.12f, 0.1f, 0.09f); // dark brown-black leather
-            mat.SetFloat("_Smoothness", leatherSmoothness);
+            mat.SetFloat("_Glossiness", leatherSmoothness);
             mat.SetFloat("_Metallic", 0.0f);
             // Subtle normal for leather grain (would need a normal map texture)
             return mat;
@@ -86,27 +86,27 @@ namespace HotToMark.Core
 
         private Material CreatePlasticMaterial(Color color)
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var mat = new Material(Shader.Find("Standard"));
             mat.color = color;
-            mat.SetFloat("_Smoothness", plasticSmoothness);
+            mat.SetFloat("_Glossiness", plasticSmoothness);
             mat.SetFloat("_Metallic", 0.0f);
             return mat;
         }
 
         private Material CreateChromeMaterial()
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var mat = new Material(Shader.Find("Standard"));
             mat.color = new Color(0.7f, 0.7f, 0.72f);
-            mat.SetFloat("_Smoothness", chromeSmoothness);
+            mat.SetFloat("_Glossiness", chromeSmoothness);
             mat.SetFloat("_Metallic", 0.85f);
             return mat;
         }
 
         private Material CreateRubberMaterial()
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var mat = new Material(Shader.Find("Standard"));
             mat.color = new Color(0.15f, 0.15f, 0.15f);
-            mat.SetFloat("_Smoothness", 0.15f);
+            mat.SetFloat("_Glossiness", 0.15f);
             mat.SetFloat("_Metallic", 0.0f);
             return mat;
         }
@@ -119,7 +119,7 @@ namespace HotToMark.Core
             var renderer = windshield.GetComponent<Renderer>();
             if (renderer == null) return;
 
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var mat = new Material(Shader.Find("Standard"));
             mat.color = new Color(0.6f, 0.8f, 0.95f, 0.04f + dirtOpacity);
 
             // Make transparent
@@ -132,7 +132,7 @@ namespace HotToMark.Core
             mat.renderQueue = 3000;
 
             // Reflections
-            mat.SetFloat("_Smoothness", 0.95f); // glass is very smooth
+            mat.SetFloat("_Glossiness", 0.95f); // glass is very smooth
             mat.SetFloat("_Metallic", reflectionIntensity);
 
             renderer.material = mat;

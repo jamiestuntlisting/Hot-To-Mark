@@ -179,7 +179,7 @@ namespace HotToMark.Environment
             stripe.transform.localScale = new Vector3(markWidth, 0.02f, markThickness);
 
             var renderer = stripe.GetComponent<Renderer>();
-            renderer.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            renderer.material = new Material(Shader.Find("Standard"));
             renderer.material.color = color;
             renderer.material.EnableKeyword("_EMISSION");
             renderer.material.SetColor("_EmissionColor", color * 0.5f);
