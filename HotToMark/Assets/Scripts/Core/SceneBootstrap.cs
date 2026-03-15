@@ -30,21 +30,42 @@ namespace HotToMark.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoBootstrapAfterScene()
         {
-            if (hasBootstrapped) return;
-            // Check if a SceneBootstrap already exists in the scene
-            if (FindAnyObjectByType<SceneBootstrap>() != null) return;
-            // Check if a GameManager already exists (scene was already built)
-            if (FindAnyObjectByType<GameManager>() != null) return;
+            Debug.Log("[HotToMark] AutoBootstrapAfterScene called");
+            if (hasBootstrapped)
+            {
+                Debug.Log("[HotToMark] Already bootstrapped, skipping");
+                return;
+            }
+            if (FindAnyObjectByType<SceneBootstrap>() != null)
+            {
+                Debug.Log("[HotToMark] SceneBootstrap already exists, skipping");
+                return;
+            }
+            if (FindAnyObjectByType<GameManager>() != null)
+            {
+                Debug.Log("[HotToMark] GameManager already exists, skipping");
+                return;
+            }
 
+            Debug.Log("[HotToMark] Creating SceneBootstrap...");
             var bootstrapObj = new GameObject("SceneBootstrap");
             bootstrapObj.AddComponent<SceneBootstrap>();
         }
 
         void Awake()
         {
+            Debug.Log("[HotToMark] SceneBootstrap.Awake called");
             if (hasBootstrapped) { Destroy(gameObject); return; }
             hasBootstrapped = true;
-            BuildScene();
+            try
+            {
+                BuildScene();
+                Debug.Log("[HotToMark] BuildScene completed successfully");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[HotToMark] BuildScene FAILED: {e}");
+            }
         }
 
         private void BuildScene()
