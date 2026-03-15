@@ -21,6 +21,11 @@ namespace HotToMark.Camera
         [SerializeField] private float speedBobAmount = 0.003f;
         [SerializeField] private float speedBobFrequency = 3f;
 
+        [Header("Interior Bounds (keep driver inside car)")]
+        [SerializeField] private float maxLateralOffset = 0.35f;
+        [SerializeField] private float maxVerticalOffset = 0.15f;
+        [SerializeField] private float maxForwardOffset = 0.25f;
+
         [Header("FOV")]
         [SerializeField] private float baseFOV = 65f;
         [SerializeField] private float maxFOVIncrease = 8f;
@@ -63,12 +68,19 @@ namespace HotToMark.Camera
                 targetPos.y += Mathf.Sin(bobTimer) * speedBobAmount * absSpeed;
             }
 
+            // Clamp offset from car center so driver stays inside the car
+            Vector3 offsetFromCar = targetPos - (carWorldPos + eyeOffset);
+            offsetFromCar.x = Mathf.Clamp(offsetFromCar.x, -maxLateralOffset, maxLateralOffset);
+            offsetFromCar.y = Mathf.Clamp(offsetFromCar.y, -maxVerticalOffset, maxVerticalOffset);
+            offsetFromCar.z = Mathf.Clamp(offsetFromCar.z, -maxForwardOffset, maxForwardOffset);
+            targetPos = carWorldPos + eyeOffset + offsetFromCar;
+
             transform.position = Vector3.Lerp(transform.position, targetPos,
                 Time.deltaTime * lookAheadSmoothing);
 
-            // Look forward (or backward when reversing)
+            // Look forward (or backward when reversing), clamped to stay inside windshield view
             Vector3 lookDir = state.gear == Gear.Reverse ? Vector3.back : Vector3.forward;
-            lookDir.x += state.steering * 0.1f;
+            lookDir.x += Mathf.Clamp(state.steering * 0.1f, -0.15f, 0.15f);
             transform.rotation = Quaternion.Lerp(transform.rotation,
                 Quaternion.LookRotation(lookDir), Time.deltaTime * 6f);
 
