@@ -52,6 +52,9 @@ namespace HotToMark.Camera
             pipCamera.transform.localPosition = cameraPosition;
             pipCamera.transform.localRotation = Quaternion.Euler(5, 180, 0);
             pipCamera.depth = -1;
+            // Remove auto-added AudioListener (only MainCamera should have one)
+            var listener = camObj.GetComponent<AudioListener>();
+            if (listener != null) Destroy(listener);
         }
 
         void Update()

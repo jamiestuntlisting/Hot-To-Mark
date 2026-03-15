@@ -42,6 +42,9 @@ namespace HotToMark.Camera
             mirrorCamera.transform.localPosition = mirrorCameraOffset;
             mirrorCamera.transform.localRotation = Quaternion.Euler(0, 180, 0); // look backward
             mirrorCamera.depth = -2; // render before main camera
+            // Remove auto-added AudioListener (only MainCamera should have one)
+            var listener = camObj.GetComponent<AudioListener>();
+            if (listener != null) Destroy(listener);
         }
 
         void LateUpdate()
