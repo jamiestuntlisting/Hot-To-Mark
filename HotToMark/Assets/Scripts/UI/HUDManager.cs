@@ -17,6 +17,12 @@ namespace HotToMark.UI
 
         // Mode label
         private TextMeshProUGUI modeLabelText;
+        private TextMeshProUGUI takeLabelText;
+
+        // PreRoll phase
+        private GameObject preRollGroup;
+        private TextMeshProUGUI preRollText;
+        private float preRollStartTime;
 
         // Driving phase
         private GameObject drivingGroup;
@@ -74,6 +80,16 @@ namespace HotToMark.UI
             var modeObj = CreateHUDText("ModeLabel", hudPanel.transform, "", 16,
                 new Color(1f, 0.6f, 0), FontStyles.Bold, 24);
             modeLabelText = modeObj;
+
+            // Take label
+            takeLabelText = CreateHUDText("TakeLabel", hudPanel.transform, "", 12,
+                new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 18);
+
+            // ---- PreRoll Group ----
+            preRollGroup = CreateGroup("PreRollGroup", hudPanel.transform);
+            preRollText = CreateHUDText("PreRollCall", preRollGroup.transform,
+                "", 32, Color.white, FontStyles.Bold, 44);
+            preRollGroup.SetActive(false);
 
             // ---- Driving Group ----
             drivingGroup = CreateGroup("DrivingGroup", hudPanel.transform);
@@ -194,17 +210,44 @@ namespace HotToMark.UI
 
             UpdateModeLabel();
 
+            bool preRoll = state.phase == GamePhase.PreRoll;
             bool driving = state.phase == GamePhase.Driving;
             bool stopped = state.phase == GamePhase.StoppedOnMark || state.phase == GamePhase.Honking;
             bool reversing = state.phase == GamePhase.Reversing;
 
+            preRollGroup.SetActive(preRoll);
             drivingGroup.SetActive(driving);
             stoppedGroup.SetActive(stopped);
             reversingGroup.SetActive(reversing);
 
-            if (driving) UpdateDrivingHUD();
+            if (preRoll) UpdatePreRollHUD();
+            else if (driving) UpdateDrivingHUD();
             else if (stopped) UpdateStoppedHUD();
             else if (reversing) UpdateReversingHUD();
+        }
+
+        private void UpdatePreRollHUD()
+        {
+            if (preRollStartTime == 0) preRollStartTime = Time.time;
+
+            float elapsed = Time.time - preRollStartTime;
+
+            if (elapsed < 1.2f)
+            {
+                preRollText.text = "ROLLING!";
+                preRollText.color = new Color(1f, 0.3f, 0.3f); // red
+            }
+            else if (elapsed < 2.2f)
+            {
+                preRollText.text = "SPEED!";
+                preRollText.color = new Color(1f, 0.8f, 0.2f); // amber
+            }
+            else
+            {
+                preRollText.text = "ACTION!";
+                preRollText.color = Color.green;
+                preRollStartTime = 0; // reset for next take
+            }
         }
 
         private void UpdateModeLabel()
@@ -216,6 +259,7 @@ namespace HotToMark.UI
                 case GameMode.SmoothOperator: modeLabelText.text = "SMOOTH OPERATOR"; break;
                 case GameMode.ExactMPH:       modeLabelText.text = "EXACT MPH"; break;
             }
+            takeLabelText.text = $"Take {state.takeNumber}  |  Mark: {state.markDistance:F0} ft";
         }
 
         private void UpdateDrivingHUD()

@@ -28,8 +28,11 @@ namespace HotToMark.Audio
         [SerializeField] private float screechCooldown = 0.3f;
 
         [Header("Voice Calls")]
+        [SerializeField] private AudioClip rollingVoiceClip;
+        [SerializeField] private AudioClip speedVoiceClip;
         [SerializeField] private AudioClip actionVoiceClip;
         [SerializeField] private AudioClip cutVoiceClip;
+        [SerializeField] private AudioClip backToOneVoiceClip;
 
         private AudioSource engineSource;
         private AudioSource sfxSource;
@@ -41,8 +44,11 @@ namespace HotToMark.Audio
         private AudioClip generatedIdleClip;
         private AudioClip generatedHornClip;
         private AudioClip generatedScreechClip;
+        private AudioClip generatedRollingClip;
+        private AudioClip generatedSpeedClip;
         private AudioClip generatedActionClip;
         private AudioClip generatedCutClip;
+        private AudioClip generatedBackToOneClip;
 
         void Awake()
         {
@@ -77,8 +83,11 @@ namespace HotToMark.Audio
             generatedIdleClip = GenerateEngineIdle(sr);
             generatedHornClip = GenerateHorn(sr);
             generatedScreechClip = GenerateTireScreech(sr);
+            generatedRollingClip = GenerateVoiceCall(sr, "rolling");
+            generatedSpeedClip = GenerateVoiceCall(sr, "speed");
             generatedActionClip = GenerateVoiceCall(sr, "action");
             generatedCutClip = GenerateVoiceCall(sr, "cut");
+            generatedBackToOneClip = GenerateVoiceCall(sr, "backtoone");
         }
 
         private void UpdateEnginePitch()
@@ -139,15 +148,33 @@ namespace HotToMark.Audio
             if (clip != null) sfxSource.PlayOneShot(clip, 0.4f);
         }
 
+        public void PlayVoiceRolling()
+        {
+            var clip = rollingVoiceClip != null ? rollingVoiceClip : generatedRollingClip;
+            if (clip != null) sfxSource.PlayOneShot(clip, 0.7f);
+        }
+
+        public void PlayVoiceSpeed()
+        {
+            var clip = speedVoiceClip != null ? speedVoiceClip : generatedSpeedClip;
+            if (clip != null) sfxSource.PlayOneShot(clip, 0.7f);
+        }
+
         public void PlayVoiceAction()
         {
             var clip = actionVoiceClip != null ? actionVoiceClip : generatedActionClip;
-            if (clip != null) sfxSource.PlayOneShot(clip, 0.7f);
+            if (clip != null) sfxSource.PlayOneShot(clip, 0.8f);
         }
 
         public void PlayVoiceCut()
         {
             var clip = cutVoiceClip != null ? cutVoiceClip : generatedCutClip;
+            if (clip != null) sfxSource.PlayOneShot(clip, 0.7f);
+        }
+
+        public void PlayVoiceBackToOne()
+        {
+            var clip = backToOneVoiceClip != null ? backToOneVoiceClip : generatedBackToOneClip;
             if (clip != null) sfxSource.PlayOneShot(clip, 0.7f);
         }
 
@@ -260,35 +287,31 @@ namespace HotToMark.Audio
         /// </summary>
         private AudioClip GenerateVoiceCall(int sr, string callType)
         {
-            bool isAction = callType == "action";
-            float duration = isAction ? 0.7f : 0.45f;
-            int length = (int)(sr * duration);
-            var clip = AudioClip.Create(isAction ? "VoiceAction" : "VoiceCut",
-                length, 1, sr, false);
-            float[] data = new float[length];
+            float duration;
+            float f0;
+            string clipName;
 
-            // Fundamental vocal frequency (male voice ~120Hz)
-            float f0 = isAction ? 140f : 160f;
+            switch (callType)
+            {
+                case "rolling":  duration = 0.65f; f0 = 130f; clipName = "VoiceRolling"; break;
+                case "speed":    duration = 0.5f;  f0 = 145f; clipName = "VoiceSpeed"; break;
+                case "action":   duration = 0.7f;  f0 = 140f; clipName = "VoiceAction"; break;
+                case "cut":      duration = 0.45f; f0 = 160f; clipName = "VoiceCut"; break;
+                case "backtoone": duration = 0.8f; f0 = 135f; clipName = "VoiceBackToOne"; break;
+                default:         duration = 0.5f;  f0 = 140f; clipName = "Voice"; break;
+            }
+
+            int length = (int)(sr * duration);
+            var clip = AudioClip.Create(clipName, length, 1, sr, false);
+            float[] data = new float[length];
 
             for (int i = 0; i < length; i++)
             {
                 float t = (float)i / sr;
                 float tNorm = t / duration;
 
-                // Envelope: sharp attack, sustain, decay
-                float env;
-                if (isAction)
-                {
-                    // "Ac-tion!": two syllables
-                    float syl1 = Gaussian(tNorm, 0.2f, 0.12f);
-                    float syl2 = Gaussian(tNorm, 0.6f, 0.2f);
-                    env = (syl1 * 0.6f + syl2 * 1f) * 0.8f;
-                }
-                else
-                {
-                    // "Cut!": single sharp syllable
-                    env = Mathf.Clamp01(t / 0.02f) * Mathf.Exp(-t * 4f) * 1.5f;
-                }
+                // Envelope per call type
+                float env = GetVoiceEnvelope(callType, t, tNorm, duration);
 
                 // Glottal pulse train (vocal folds)
                 float pitch = f0 * (1f + 0.08f * Mathf.Sin(2f * Mathf.PI * 5f * t));
@@ -300,32 +323,8 @@ namespace HotToMark.Audio
                 }
                 glottal *= 0.3f;
 
-                // Formant shaping (vowel resonances)
-                float formant;
-                if (isAction)
-                {
-                    // /æ/ -> /ʃ/ -> /ə/ -> /n/
-                    float f1 = Mathf.Lerp(730, 490, tNorm); // first formant
-                    float f2 = Mathf.Lerp(1090, 1350, tNorm); // second formant
-                    formant = Mathf.Sin(2f * Mathf.PI * f1 * t) * 0.4f +
-                              Mathf.Sin(2f * Mathf.PI * f2 * t) * 0.2f;
-                }
-                else
-                {
-                    // /k/ -> /ʌ/ -> /t/
-                    float f1 = Mathf.Lerp(600, 300, tNorm);
-                    float f2 = Mathf.Lerp(1000, 800, tNorm);
-                    formant = Mathf.Sin(2f * Mathf.PI * f1 * t) * 0.4f +
-                              Mathf.Sin(2f * Mathf.PI * f2 * t) * 0.2f;
-
-                    // /k/ consonant burst at start
-                    if (t < 0.03f)
-                        formant += Random.Range(-0.3f, 0.3f);
-                    // /t/ consonant burst at end
-                    if (tNorm > 0.8f)
-                        formant += Random.Range(-0.15f, 0.15f) *
-                            Mathf.Clamp01((tNorm - 0.8f) / 0.1f);
-                }
+                // Formant shaping per call type
+                float formant = GetVoiceFormant(callType, t, tNorm);
 
                 // Aspirated noise (breathiness)
                 float breath = Random.Range(-0.05f, 0.05f) * env;
@@ -335,6 +334,105 @@ namespace HotToMark.Audio
 
             clip.SetData(data, 0);
             return clip;
+        }
+
+        private float GetVoiceEnvelope(string callType, float t, float tNorm, float duration)
+        {
+            switch (callType)
+            {
+                case "rolling":
+                    // "Ro-lling!": two syllables, second held longer
+                    return (Gaussian(tNorm, 0.2f, 0.1f) * 0.7f +
+                            Gaussian(tNorm, 0.6f, 0.22f) * 1f) * 0.8f;
+
+                case "speed":
+                    // "Speed!": single sustained syllable with punch
+                    return Mathf.Clamp01(t / 0.02f) *
+                           Mathf.Clamp01((duration - t) / 0.08f) * 0.9f;
+
+                case "action":
+                    // "Ac-tion!": two syllables
+                    return (Gaussian(tNorm, 0.2f, 0.12f) * 0.6f +
+                            Gaussian(tNorm, 0.6f, 0.2f) * 1f) * 0.8f;
+
+                case "cut":
+                    // "Cut!": single sharp syllable
+                    return Mathf.Clamp01(t / 0.02f) * Mathf.Exp(-t * 4f) * 1.5f;
+
+                case "backtoone":
+                    // "Back-to-one!": three syllables
+                    return (Gaussian(tNorm, 0.15f, 0.08f) * 0.7f +
+                            Gaussian(tNorm, 0.4f, 0.06f) * 0.5f +
+                            Gaussian(tNorm, 0.7f, 0.15f) * 1f) * 0.8f;
+
+                default:
+                    return Mathf.Clamp01(t / 0.02f) * Mathf.Exp(-t * 3f);
+            }
+        }
+
+        private float GetVoiceFormant(string callType, float t, float tNorm)
+        {
+            float formant;
+            switch (callType)
+            {
+                case "rolling":
+                    // /ɹ/ -> /oʊ/ -> /l/ -> /ɪ/ -> /ŋ/
+                    float rf1 = Mathf.Lerp(400, 300, tNorm);
+                    float rf2 = Mathf.Lerp(1200, 900, tNorm);
+                    formant = Mathf.Sin(2f * Mathf.PI * rf1 * t) * 0.4f +
+                              Mathf.Sin(2f * Mathf.PI * rf2 * t) * 0.2f;
+                    // /ɹ/ start roughness
+                    if (t < 0.05f) formant += Random.Range(-0.15f, 0.15f);
+                    return formant;
+
+                case "speed":
+                    // /s/ -> /p/ -> /iː/ -> /d/
+                    float sf1 = Mathf.Lerp(270, 400, tNorm);
+                    float sf2 = Mathf.Lerp(2300, 2000, tNorm);
+                    formant = Mathf.Sin(2f * Mathf.PI * sf1 * t) * 0.35f +
+                              Mathf.Sin(2f * Mathf.PI * sf2 * t) * 0.25f;
+                    // /s/ sibilant at start
+                    if (t < 0.06f) formant += Random.Range(-0.3f, 0.3f) * (1f - t / 0.06f);
+                    // /d/ burst at end
+                    if (tNorm > 0.85f) formant += Random.Range(-0.1f, 0.1f);
+                    return formant;
+
+                case "action":
+                    // /æ/ -> /ʃ/ -> /ə/ -> /n/
+                    float af1 = Mathf.Lerp(730, 490, tNorm);
+                    float af2 = Mathf.Lerp(1090, 1350, tNorm);
+                    formant = Mathf.Sin(2f * Mathf.PI * af1 * t) * 0.4f +
+                              Mathf.Sin(2f * Mathf.PI * af2 * t) * 0.2f;
+                    return formant;
+
+                case "cut":
+                    // /k/ -> /ʌ/ -> /t/
+                    float cf1 = Mathf.Lerp(600, 300, tNorm);
+                    float cf2 = Mathf.Lerp(1000, 800, tNorm);
+                    formant = Mathf.Sin(2f * Mathf.PI * cf1 * t) * 0.4f +
+                              Mathf.Sin(2f * Mathf.PI * cf2 * t) * 0.2f;
+                    if (t < 0.03f) formant += Random.Range(-0.3f, 0.3f);
+                    if (tNorm > 0.8f)
+                        formant += Random.Range(-0.15f, 0.15f) *
+                            Mathf.Clamp01((tNorm - 0.8f) / 0.1f);
+                    return formant;
+
+                case "backtoone":
+                    // /b/ -> /æ/ -> /k/ -> /t/ -> /ə/ -> /w/ -> /ʌ/ -> /n/
+                    float bf1 = Mathf.Lerp(700, 600, tNorm);
+                    float bf2 = Mathf.Lerp(1100, 1000, tNorm);
+                    formant = Mathf.Sin(2f * Mathf.PI * bf1 * t) * 0.4f +
+                              Mathf.Sin(2f * Mathf.PI * bf2 * t) * 0.2f;
+                    // /b/ voiced stop
+                    if (t < 0.02f) formant += Random.Range(-0.2f, 0.2f);
+                    // /k/ burst mid-word
+                    if (tNorm > 0.3f && tNorm < 0.35f)
+                        formant += Random.Range(-0.15f, 0.15f);
+                    return formant;
+
+                default:
+                    return 0f;
+            }
         }
 
         private static float Gaussian(float x, float mean, float sigma)

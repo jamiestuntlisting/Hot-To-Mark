@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using HotToMark.Vehicle;
 using HotToMark.Environment;
 using HotToMark.Camera;
@@ -65,25 +66,44 @@ namespace HotToMark.Core
         public void StartGame(GameMode mode)
         {
             state.Reset();
-            state.phase = GamePhase.Driving;
+            state.takeNumber++;
             state.mode = mode;
             state.markDistance = Random.Range(GameState.MARK_MIN, GameState.MARK_MAX);
             state.targetMPH = Random.Range(15, 35);
             state.checkpointDistance = state.markDistance * 0.6f;
-            state.takeStartTime = Time.time;
 
             if (mainMenu != null) mainMenu.Hide();
             if (resultsScreen != null) resultsScreen.Hide();
             if (hud != null) hud.Show();
             if (pipCamera != null) pipCamera.SetActive(true);
             if (markSystem != null) markSystem.SetupMark(state.markDistance);
-            if (engineAudio != null) engineAudio.StartEngine();
             if (crewManager != null) crewManager.SpawnCrew();
             if (hornSystem != null) hornSystem.ResetHorn();
             if (pauseMenu != null) pauseMenu.Hide();
 
-            // "Action!" voice call (Stage 8.5)
+            // Film protocol sequence: "Rolling!" -> "Speed!" -> "Action!"
+            state.phase = GamePhase.PreRoll;
+            StartCoroutine(FilmProtocolSequence());
+        }
+
+        private System.Collections.IEnumerator FilmProtocolSequence()
+        {
+            // "Rolling!" — AD calls to signal cameras are recording
+            if (engineAudio != null) engineAudio.PlayVoiceRolling();
+            yield return new WaitForSeconds(1.2f);
+
+            // "Speed!" — sound department confirms audio is recording
+            if (engineAudio != null) engineAudio.PlayVoiceSpeed();
+            yield return new WaitForSeconds(1.0f);
+
+            // Start engine during the pause
+            if (engineAudio != null) engineAudio.StartEngine();
+            yield return new WaitForSeconds(0.8f);
+
+            // "Action!" — director's call, player can now drive
             if (engineAudio != null) engineAudio.PlayVoiceAction();
+            state.phase = GamePhase.Driving;
+            state.takeStartTime = Time.time;
         }
 
         /// <summary>
@@ -109,6 +129,9 @@ namespace HotToMark.Core
             state.gear = Gear.Reverse;
             state.phase = GamePhase.Reversing;
             state.reverseStartTime = Time.time;
+
+            // "Back to one!" — AD tells driver to return to starting position
+            if (engineAudio != null) engineAudio.PlayVoiceBackToOne();
         }
 
         /// <summary>
@@ -159,7 +182,7 @@ namespace HotToMark.Core
         public void PauseGame()
         {
             if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
-                || state.phase == GamePhase.Paused)
+                || state.phase == GamePhase.Paused || state.phase == GamePhase.PreRoll)
                 return;
 
             state.phaseBeforePause = state.phase;

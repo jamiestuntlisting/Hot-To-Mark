@@ -40,7 +40,7 @@ namespace HotToMark.Vehicle
             if (state == null) return;
 
             if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
-                || state.phase == GamePhase.Paused)
+                || state.phase == GamePhase.Paused || state.phase == GamePhase.PreRoll)
                 return;
 
             float dt = Time.deltaTime;

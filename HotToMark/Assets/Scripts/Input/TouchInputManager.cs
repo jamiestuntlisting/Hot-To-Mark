@@ -66,7 +66,7 @@ namespace HotToMark.Input
             }
 
             if (state.phase == GamePhase.Menu || state.phase == GamePhase.Results
-                || state.phase == GamePhase.Paused)
+                || state.phase == GamePhase.Paused || state.phase == GamePhase.PreRoll)
                 return;
 
             HandleKeyboardInput();

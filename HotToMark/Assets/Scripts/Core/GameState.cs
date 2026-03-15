@@ -5,6 +5,7 @@ namespace HotToMark.Core
     public enum GamePhase
     {
         Menu,
+        PreRoll,        // Film protocol: "Rolling!", "Speed!", "Action!"
         Driving,
         StoppedOnMark,
         Honking,
@@ -76,6 +77,9 @@ namespace HotToMark.Core
         public bool checkpointPassed;
         public float checkpointDistance;
         public float speedAtCheckpoint;
+
+        [Header("Take")]
+        public int takeNumber;             // current take number (persists across rounds)
 
         [Header("Pause")]
         public GamePhase phaseBeforePause;

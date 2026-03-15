@@ -70,7 +70,8 @@ namespace HotToMark.Audio
                 return;
             }
 
-            if (state.phase == GamePhase.Driving || state.phase == GamePhase.Reversing)
+            if (state.phase == GamePhase.PreRoll || state.phase == GamePhase.Driving
+                || state.phase == GamePhase.Reversing)
             {
                 if (!ambientSource.isPlaying)
                 {
