@@ -32,9 +32,9 @@ namespace HotToMark.Core
         {
             if (hasBootstrapped) return;
             // Check if a SceneBootstrap already exists in the scene
-            if (FindObjectOfType<SceneBootstrap>() != null) return;
+            if (FindAnyObjectByType<SceneBootstrap>() != null) return;
             // Check if a GameManager already exists (scene was already built)
-            if (FindObjectOfType<GameManager>() != null) return;
+            if (FindAnyObjectByType<GameManager>() != null) return;
 
             var bootstrapObj = new GameObject("SceneBootstrap");
             bootstrapObj.AddComponent<SceneBootstrap>();
@@ -224,11 +224,16 @@ namespace HotToMark.Core
             canvasObj.AddComponent<GraphicRaycaster>();
 
             // EventSystem is required for UI button/touch input to work
-            if (FindObjectOfType<EventSystem>() == null)
+            if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var eventObj = new GameObject("EventSystem");
                 eventObj.AddComponent<EventSystem>();
+                // Use InputSystemUIInputModule for new Input System, fall back to StandaloneInputModule
+                #if ENABLE_INPUT_SYSTEM
+                eventObj.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                #else
                 eventObj.AddComponent<StandaloneInputModule>();
+                #endif
             }
 
             return canvasObj;

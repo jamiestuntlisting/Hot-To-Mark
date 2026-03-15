@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.Build;
 
 namespace HotToMark.Editor
 {
@@ -81,15 +82,14 @@ namespace HotToMark.Editor
             // iOS specific
             PlayerSettings.iOS.targetOSVersionString = "15.0";
             PlayerSettings.iOS.requiresPersistentWiFi = false;
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.iOS,
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS,
                 ScriptingImplementation.IL2CPP);
-            PlayerSettings.SetArchitecture(BuildTargetGroup.iOS, 1); // ARM64
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.iOS,
+            PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.iOS,
                 ApiCompatibilityLevel.NET_Unity_4_8);
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;
 
             // Bundle ID
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.iOS,
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS,
                 "com.stuntgames.hottomark");
 
             Debug.Log("[HotToMark] Player settings applied for iOS deployment.");

@@ -37,7 +37,9 @@ namespace HotToMark.Input
 
         void Start()
         {
-            UnityEngine.Input.gyro.enabled = true;
+            // Enable accelerometer sensor for tilt steering (new Input System)
+            if (UnityEngine.InputSystem.Accelerometer.current != null)
+                InputSystem.EnableDevice(UnityEngine.InputSystem.Accelerometer.current);
         }
 
         private void EnsureInit()
@@ -159,8 +161,10 @@ namespace HotToMark.Input
         // ---- Tilt-to-steer (accelerometer) ----
         private void HandleTiltSteering()
         {
-            // Use accelerometer for tilt steering
-            Vector3 accel = UnityEngine.Input.acceleration;
+            // Use accelerometer for tilt steering (new Input System)
+            Vector3 accel = Vector3.zero;
+            if (UnityEngine.InputSystem.Accelerometer.current != null)
+                accel = UnityEngine.InputSystem.Accelerometer.current.acceleration.ReadValue();
             float tilt = accel.x; // left/right tilt
 
             if (Mathf.Abs(tilt) < tiltDeadzone) tilt = 0;
