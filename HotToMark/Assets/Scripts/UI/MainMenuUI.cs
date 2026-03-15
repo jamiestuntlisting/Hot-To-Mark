@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
+using HotToMark.Vehicle;
 using HotToMark.Scoring;
 
 namespace HotToMark.UI
@@ -15,6 +16,9 @@ namespace HotToMark.UI
     {
         private GameObject menuPanel;
         private GameMode lastSelectedMode = GameMode.Standard;
+        private VehicleType selectedVehicle = VehicleType.Sedan;
+        private TextMeshProUGUI vehicleLabelText;
+        private Image[] vehicleButtonBgs = new Image[3];
 
         void Awake()
         {
@@ -50,28 +54,47 @@ namespace HotToMark.UI
                 new Color(1f, 0.6f, 0, 0.3f));
             UIFactory.SetAnchors(divider, new Vector2(0.15f, 0.70f), new Vector2(0.85f, 0.705f));
 
+            // ---- Vehicle Selector (F-1) ----
+            var vehicleLabel = UIFactory.CreateText("VehicleLabel", menuPanel.transform,
+                "SELECT VEHICLE", 13, new Color(1f, 0.6f, 0),
+                FontStyles.Bold, TextAlignmentOptions.Left);
+            UIFactory.SetAnchors(vehicleLabel, new Vector2(0.1f, 0.65f), new Vector2(0.9f, 0.695f));
+
+            CreateVehicleButton("Sedan", VehicleType.Sedan, 0, menuPanel.transform);
+            CreateVehicleButton("Muscle", VehicleType.MuscleCar, 1, menuPanel.transform);
+            CreateVehicleButton("SUV", VehicleType.SUV, 2, menuPanel.transform);
+
+            vehicleLabelText = UIFactory.CreateText("VehicleDesc", menuPanel.transform,
+                "Balanced handling. The industry standard.", 10,
+                new Color(0.5f, 0.5f, 0.5f), FontStyles.Italic, TextAlignmentOptions.Center)
+                .GetComponent<TextMeshProUGUI>();
+            UIFactory.SetAnchors(vehicleLabelText.gameObject,
+                new Vector2(0.1f, 0.58f), new Vector2(0.9f, 0.62f));
+
+            UpdateVehicleHighlight();
+
             // Mode buttons
             CreateModeButton("Standard Take",
                 "Drive to the mark, stop accurately, reverse to one.",
-                GameMode.Standard, 0.56f, menuPanel.transform);
+                GameMode.Standard, 0.46f, menuPanel.transform);
 
             CreateModeButton("Speed Run",
                 "Complete the entire take as fast as possible.",
-                GameMode.SpeedRun, 0.44f, menuPanel.transform);
+                GameMode.SpeedRun, 0.35f, menuPanel.transform);
 
             CreateModeButton("Smooth Operator",
                 "Minimize jerky inputs. Be cinematic.",
-                GameMode.SmoothOperator, 0.32f, menuPanel.transform);
+                GameMode.SmoothOperator, 0.24f, menuPanel.transform);
 
             CreateModeButton("Exact MPH",
                 "Hit exactly the target speed at the checkpoint.",
-                GameMode.ExactMPH, 0.20f, menuPanel.transform);
+                GameMode.ExactMPH, 0.13f, menuPanel.transform);
 
             // Footer
             var footer = UIFactory.CreateText("Footer", menuPanel.transform,
                 "Tap a mode to begin your take", 12, new Color(0.45f, 0.45f, 0.45f),
                 FontStyles.Normal, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.05f), new Vector2(0.9f, 0.1f));
+            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.02f), new Vector2(0.9f, 0.07f));
         }
 
         private void CreateModeButton(string label, string desc, GameMode mode,
@@ -129,6 +152,51 @@ namespace HotToMark.UI
             UIFactory.SetAnchors(descObj,
                 new Vector2(0.1f, yCenter - descHeight),
                 new Vector2(0.9f, yCenter));
+        }
+
+        private void CreateVehicleButton(string label, VehicleType type, int index,
+            Transform parent)
+        {
+            float xStart = 0.1f + index * 0.27f;
+            float xEnd = xStart + 0.25f;
+
+            var btnObj = UIFactory.CreateImage($"Vehicle_{label}", parent,
+                new Color(0.08f, 0.08f, 0.08f));
+            UIFactory.SetAnchors(btnObj, new Vector2(xStart, 0.62f),
+                new Vector2(xEnd, 0.65f));
+
+            vehicleButtonBgs[index] = btnObj.GetComponent<Image>();
+
+            var labelObj = UIFactory.CreateText("Label", btnObj.transform,
+                label, 14, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(labelObj, new Vector2(0, 0), new Vector2(1, 1));
+
+            var btn = btnObj.AddComponent<Button>();
+            var capturedType = type;
+            var capturedIdx = index;
+            btn.onClick.AddListener(() => {
+                selectedVehicle = capturedType;
+                if (GameManager.Instance != null)
+                    GameManager.Instance.state.selectedVehicle = capturedType;
+                UpdateVehicleHighlight();
+            });
+        }
+
+        private void UpdateVehicleHighlight()
+        {
+            Color active = new Color(1f, 0.6f, 0, 0.7f);
+            Color inactive = new Color(0.08f, 0.08f, 0.08f);
+
+            for (int i = 0; i < vehicleButtonBgs.Length; i++)
+            {
+                if (vehicleButtonBgs[i] == null) continue;
+                vehicleButtonBgs[i].color = (i == (int)selectedVehicle) ? active : inactive;
+            }
+
+            var configs = VehicleConfig.GetDefaults();
+            int idx = (int)selectedVehicle;
+            if (idx < configs.Length && vehicleLabelText != null)
+                vehicleLabelText.text = configs[idx].description;
         }
 
         public void Show()

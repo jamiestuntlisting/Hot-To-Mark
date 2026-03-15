@@ -32,6 +32,7 @@ namespace HotToMark.Core
         public CrewManager crewManager;
         public PIPCameraController pipCamera;
         public PauseMenuUI pauseMenu;
+        public DirectorFeedback directorFeedback;
 
         public static GameManager Instance { get; private set; }
 
@@ -71,6 +72,15 @@ namespace HotToMark.Core
             state.markDistance = Random.Range(GameState.MARK_MIN, GameState.MARK_MAX);
             state.targetMPH = Random.Range(15, 35);
             state.checkpointDistance = state.markDistance * 0.6f;
+
+            // Apply selected vehicle (F-1)
+            if (carController != null)
+            {
+                var configs = Vehicle.VehicleConfig.GetDefaults();
+                int vIdx = (int)state.selectedVehicle;
+                if (vIdx < configs.Length)
+                    carController.ApplyVehicle(configs[vIdx]);
+            }
 
             if (mainMenu != null) mainMenu.Hide();
             if (resultsScreen != null) resultsScreen.Hide();
@@ -119,6 +129,9 @@ namespace HotToMark.Core
 
             // "Cut!" voice call (Stage 8.6)
             if (engineAudio != null) engineAudio.PlayVoiceCut();
+
+            // Director reacts to mark accuracy (F-6)
+            if (directorFeedback != null) directorFeedback.OnMarkStop(accuracy);
         }
 
         /// <summary>
@@ -164,6 +177,9 @@ namespace HotToMark.Core
 
                 // Save high score
                 HighScoreManager.SaveScore(state.mode, result.totalScore);
+
+                // Director feedback on overall performance (F-6)
+                if (directorFeedback != null) directorFeedback.OnTakeComplete(result);
 
                 if (resultsScreen != null) resultsScreen.Show(result, state);
             }

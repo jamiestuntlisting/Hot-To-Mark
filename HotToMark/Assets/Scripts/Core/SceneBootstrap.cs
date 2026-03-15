@@ -159,6 +159,16 @@ namespace HotToMark.Core
             ambientObj.transform.SetParent(audioRoot.transform);
             ambientObj.AddComponent<AmbientAudioGenerator>();
 
+            // Director feedback (F-6)
+            var directorObj = new GameObject("DirectorFeedback");
+            directorObj.transform.SetParent(audioRoot.transform);
+            var directorFeedback = directorObj.AddComponent<DirectorFeedback>();
+
+            // Walkie-talkie comms (F-9)
+            var walkieObj = new GameObject("WalkieTalkieComms");
+            walkieObj.transform.SetParent(audioRoot.transform);
+            walkieObj.AddComponent<WalkieTalkieComms>();
+
             // ---- Haptics (Stage 8) ----
             var hapticObj = new GameObject("Haptics");
             var haptics = hapticObj.AddComponent<HapticFeedback>();
@@ -216,6 +226,7 @@ namespace HotToMark.Core
             gm.crewManager = crewManager;
             gm.pipCamera = pipController;
             gm.pauseMenu = pauseMenu;
+            gm.directorFeedback = directorFeedback;
 
             // ---- Visual Polish (Stage 8) ----
             var polishObj = new GameObject("VisualPolish");

@@ -1,4 +1,5 @@
 using UnityEngine;
+using HotToMark.Vehicle;
 
 namespace HotToMark.Core
 {
@@ -80,6 +81,7 @@ namespace HotToMark.Core
 
         [Header("Take")]
         public int takeNumber;             // current take number (persists across rounds)
+        public VehicleType selectedVehicle = VehicleType.Sedan;
 
         [Header("Pause")]
         public GamePhase phaseBeforePause;

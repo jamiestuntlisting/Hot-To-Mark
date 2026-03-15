@@ -18,6 +18,9 @@ namespace HotToMark.Vehicle
         [SerializeField] private float steerSensitivity = 0.85f;
         [SerializeField] private float lateralSpeedFactor = 0.003f;
 
+        [Header("Vehicle")]
+        public VehicleConfig activeVehicle;
+
         private GameState state;
         private bool initialized;
         private const float MPH_TO_FPS = 1.467f; // mph to feet/s
@@ -110,8 +113,9 @@ namespace HotToMark.Vehicle
                 if (state.speed < 0) state.speed = 0;
             }
 
-            state.speed = Mathf.Clamp(state.speed,
-                -GameState.MAX_REVERSE_MPH, GameState.MAX_FORWARD_MPH);
+            float maxFwd = activeVehicle != null ? activeVehicle.maxForwardMPH : GameState.MAX_FORWARD_MPH;
+            float maxRev = activeVehicle != null ? activeVehicle.maxReverseMPH : GameState.MAX_REVERSE_MPH;
+            state.speed = Mathf.Clamp(state.speed, -maxRev, maxFwd);
         }
 
         private void UpdatePosition(float dt)
@@ -201,6 +205,22 @@ namespace HotToMark.Vehicle
                 float returnAccuracy = Mathf.Max(0, 100f - Mathf.Abs(state.posY) * 10f);
                 GameManager.Instance.OnReturnedToOne(returnAccuracy);
             }
+        }
+
+        /// <summary>
+        /// Apply a vehicle configuration, changing handling characteristics.
+        /// </summary>
+        public void ApplyVehicle(VehicleConfig config)
+        {
+            if (config == null) return;
+            activeVehicle = config;
+            accelForce = config.accelForce;
+            brakeForce = config.brakeForce;
+            dragCoeff = config.dragCoeff;
+            rollingFriction = config.rollingFriction;
+            steerSmoothing = config.steerSmoothing;
+            steerSensitivity = config.steerSensitivity;
+            lateralSpeedFactor = config.lateralSpeedFactor;
         }
 
         public void SetSteeringInput(float input)
