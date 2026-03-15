@@ -251,13 +251,13 @@ namespace HotToMark.UI
 
         private void OnPlayAgain()
         {
-            if (lastState != null)
+            if (lastState != null && GameManager.Instance != null)
                 GameManager.Instance.StartGame(lastState.mode);
         }
 
         private void OnBackToMenu()
         {
-            GameManager.Instance.ShowMenu();
+            GameManager.Instance?.ShowMenu();
         }
 
         private Color GradeColor(string grade)

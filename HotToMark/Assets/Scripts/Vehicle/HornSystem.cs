@@ -99,7 +99,7 @@ namespace HotToMark.Vehicle
             reverseShiftPending = false;
             if (state != null && (state.phase == GamePhase.Honking || state.phase == GamePhase.StoppedOnMark))
             {
-                GameManager.Instance.OnShiftToReverse();
+                GameManager.Instance?.OnShiftToReverse();
             }
         }
 

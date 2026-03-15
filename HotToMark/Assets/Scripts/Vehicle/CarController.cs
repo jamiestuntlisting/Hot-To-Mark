@@ -182,13 +182,13 @@ namespace HotToMark.Vehicle
                 && state.speed >= 0)
             {
                 float accuracy = Mathf.Max(0, 100f - (distFromMark / threshold) * 100f);
-                GameManager.Instance.OnStoppedOnMark(accuracy);
+                GameManager.Instance?.OnStoppedOnMark(accuracy);
             }
             else if (state.posY > state.markDistance + GameState.OVERSHOOT_LIMIT
                      && Mathf.Abs(state.speed) < 0.5f)
             {
                 float accuracy = Mathf.Max(0, 100f - (distFromMark / threshold) * 100f);
-                GameManager.Instance.OnStoppedOnMark(accuracy);
+                GameManager.Instance?.OnStoppedOnMark(accuracy);
             }
         }
 
@@ -203,7 +203,7 @@ namespace HotToMark.Vehicle
             if (nearStart || overshootStart)
             {
                 float returnAccuracy = Mathf.Max(0, 100f - Mathf.Abs(state.posY) * 10f);
-                GameManager.Instance.OnReturnedToOne(returnAccuracy);
+                GameManager.Instance?.OnReturnedToOne(returnAccuracy);
             }
         }
 
