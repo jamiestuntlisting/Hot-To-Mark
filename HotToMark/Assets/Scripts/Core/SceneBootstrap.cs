@@ -14,13 +14,36 @@ namespace HotToMark.Core
 {
     /// <summary>
     /// Bootstrap script that builds the entire scene at runtime.
-    /// Attach this to an empty GameObject in a blank scene.
-    /// All UI components self-build their own hierarchy.
+    /// Auto-runs via RuntimeInitializeOnLoadMethod — no manual scene setup needed.
+    /// Can also be attached to a GameObject manually.
     /// </summary>
     public class SceneBootstrap : MonoBehaviour
     {
+        private static bool hasBootstrapped;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void AutoBootstrap()
+        {
+            hasBootstrapped = false;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoBootstrapAfterScene()
+        {
+            if (hasBootstrapped) return;
+            // Check if a SceneBootstrap already exists in the scene
+            if (FindObjectOfType<SceneBootstrap>() != null) return;
+            // Check if a GameManager already exists (scene was already built)
+            if (FindObjectOfType<GameManager>() != null) return;
+
+            var bootstrapObj = new GameObject("SceneBootstrap");
+            bootstrapObj.AddComponent<SceneBootstrap>();
+        }
+
         void Awake()
         {
+            if (hasBootstrapped) { Destroy(gameObject); return; }
+            hasBootstrapped = true;
             BuildScene();
         }
 
