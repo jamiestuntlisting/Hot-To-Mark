@@ -204,6 +204,12 @@ namespace HotToMark.Core
             // ---- PIP Display (overlay on UI canvas) ----
             BuildPIPDisplay(uiRoot.transform, pipController);
 
+            // ---- Career Menu (F-3) ----
+            var careerMenuObj = new GameObject("CareerMenu");
+            careerMenuObj.transform.SetParent(uiRoot.transform, false);
+            careerMenuObj.AddComponent<RectTransform>().SetFullStretch();
+            var careerMenu = careerMenuObj.AddComponent<CareerMenuUI>();
+
             // ---- Pause Menu ----
             var pauseObj = new GameObject("PauseMenu");
             pauseObj.transform.SetParent(uiRoot.transform, false);
@@ -227,13 +233,36 @@ namespace HotToMark.Core
             gm.pipCamera = pipController;
             gm.pauseMenu = pauseMenu;
             gm.directorFeedback = directorFeedback;
-            gm.roadManager = roadManager;
-            gm.weatherSystem = weatherSystem;
 
             // ---- Weather System (F-7) ----
             var weatherObj = new GameObject("WeatherSystem");
             weatherObj.transform.SetParent(environmentRoot.transform);
             var weatherSystem = weatherObj.AddComponent<WeatherSystem>();
+
+            gm.roadManager = roadManager;
+            gm.weatherSystem = weatherSystem;
+            gm.multiMarkSystem = multiMarkSystem;
+            gm.obstacleSystem = obstacleSystem;
+            gm.replaySystem = replaySystem;
+            gm.careerMenu = careerMenu;
+
+            // ---- Multi-Mark System (F-8) ----
+            var multiMarkObj = new GameObject("MultiMarkSystem");
+            multiMarkObj.transform.SetParent(environmentRoot.transform);
+            var multiMarkSystem = multiMarkObj.AddComponent<MultiMarkSystem>();
+
+            // ---- Obstacle System (F-10) ----
+            var obstacleObj = new GameObject("ObstacleSystem");
+            obstacleObj.transform.SetParent(environmentRoot.transform);
+            var obstacleSystem = obstacleObj.AddComponent<ObstacleSystem>();
+
+            // ---- Replay System (F-5) ----
+            var replayObj = new GameObject("ReplaySystem");
+            var replaySystem = replayObj.AddComponent<ReplaySystem>();
+
+            // ---- Career Manager (F-3) ----
+            var careerObj = new GameObject("CareerManager");
+            careerObj.AddComponent<CareerManager>();
 
             // ---- Game Center (F-4) ----
             var gcObj = new GameObject("GameCenter");

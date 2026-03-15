@@ -35,6 +35,10 @@ namespace HotToMark.Core
         public DirectorFeedback directorFeedback;
         public RoadManager roadManager;
         public WeatherSystem weatherSystem;
+        public MultiMarkSystem multiMarkSystem;
+        public ObstacleSystem obstacleSystem;
+        public ReplaySystem replaySystem;
+        public CareerMenuUI careerMenu;
 
         public static GameManager Instance { get; private set; }
 
@@ -64,6 +68,7 @@ namespace HotToMark.Core
             if (hud != null) hud.Hide();
             if (pipCamera != null) pipCamera.SetActive(false);
             if (pauseMenu != null) pauseMenu.Hide();
+            if (careerMenu != null) careerMenu.Hide();
         }
 
         public void StartGame(GameMode mode)
@@ -97,7 +102,19 @@ namespace HotToMark.Core
             if (weatherSystem != null)
                 weatherSystem.ApplyWeather(state.selectedWeather);
 
+            // Obstacles (F-10) — spawn based on take number (difficulty ramps up)
+            if (obstacleSystem != null)
+            {
+                int difficulty = Mathf.Min(state.takeNumber / 2, 3);
+                obstacleSystem.SpawnObstacles(difficulty, state.markDistance);
+            }
+
+            // Start recording replay (F-5)
+            if (replaySystem != null)
+                replaySystem.StartRecording();
+
             if (mainMenu != null) mainMenu.Hide();
+            if (careerMenu != null) careerMenu.Hide();
             if (resultsScreen != null) resultsScreen.Hide();
             if (hud != null) hud.Show();
             if (pipCamera != null) pipCamera.SetActive(true);
@@ -182,6 +199,9 @@ namespace HotToMark.Core
 
             state.phase = GamePhase.Results;
 
+            // Stop replay recording (F-5)
+            if (replaySystem != null) replaySystem.StopRecording();
+
             if (engineAudio != null) engineAudio.StopEngine();
             if (hud != null) hud.Hide();
             if (pipCamera != null) pipCamera.SetActive(false);
@@ -190,10 +210,23 @@ namespace HotToMark.Core
             {
                 ScoreResult result = scoreManager.CalculateScore(state);
 
+                // Obstacle penalties (F-10)
+                if (obstacleSystem != null && obstacleSystem.obstaclesHit > 0)
+                {
+                    int obsPenalty = obstacleSystem.GetPenaltyPoints();
+                    result.penalties.Add(new Penalty(
+                        $"Hit {obstacleSystem.obstaclesHit} obstacle(s)", obsPenalty));
+                    result.totalScore = Mathf.Max(0, result.totalScore - obsPenalty);
+                }
+
                 // Save high score (local + Game Center)
                 HighScoreManager.SaveScore(state.mode, result.totalScore);
                 if (GameCenterManager.Instance != null)
                     GameCenterManager.Instance.ReportScore(state.mode, result.totalScore);
+
+                // Career mode scene completion (F-3)
+                if (CareerManager.Instance != null)
+                    CareerManager.Instance.CompleteScene(result.totalScore);
 
                 // Director feedback on overall performance (F-6)
                 if (directorFeedback != null) directorFeedback.OnTakeComplete(result);

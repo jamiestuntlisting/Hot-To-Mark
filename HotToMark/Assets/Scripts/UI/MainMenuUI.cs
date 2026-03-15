@@ -118,25 +118,57 @@ namespace HotToMark.UI
             // Mode buttons
             CreateModeButton("Standard Take",
                 "Drive to the mark, stop accurately, reverse to one.",
-                GameMode.Standard, 0.38f, menuPanel.transform);
+                GameMode.Standard, 0.375f, menuPanel.transform);
 
             CreateModeButton("Speed Run",
                 "Complete the entire take as fast as possible.",
-                GameMode.SpeedRun, 0.29f, menuPanel.transform);
+                GameMode.SpeedRun, 0.295f, menuPanel.transform);
 
             CreateModeButton("Smooth Operator",
                 "Minimize jerky inputs. Be cinematic.",
-                GameMode.SmoothOperator, 0.20f, menuPanel.transform);
+                GameMode.SmoothOperator, 0.215f, menuPanel.transform);
 
             CreateModeButton("Exact MPH",
                 "Hit exactly the target speed at the checkpoint.",
-                GameMode.ExactMPH, 0.11f, menuPanel.transform);
+                GameMode.ExactMPH, 0.135f, menuPanel.transform);
+
+            // Career Mode button (F-3)
+            var careerBtnObj = UIFactory.CreateImage("CareerBtn", menuPanel.transform,
+                new Color(0.15f, 0.25f, 0.15f));
+            UIFactory.SetAnchors(careerBtnObj, new Vector2(0.08f, 0.05f), new Vector2(0.50f, 0.10f));
+            var careerBtn = careerBtnObj.AddComponent<Button>();
+            careerBtn.onClick.AddListener(() => {
+                Hide();
+                if (GameManager.Instance != null && GameManager.Instance.careerMenu != null)
+                    GameManager.Instance.careerMenu.Show();
+            });
+            var careerLabel = UIFactory.CreateText("CareerLabel", careerBtnObj.transform,
+                "CAREER MODE", 14, new Color(0.5f, 1f, 0.5f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(careerLabel, new Vector2(0, 0), new Vector2(1, 1));
+
+            // Watch Replay button (F-5)
+            var replayBtnObj = UIFactory.CreateImage("ReplayBtn", menuPanel.transform,
+                new Color(0.15f, 0.15f, 0.25f));
+            UIFactory.SetAnchors(replayBtnObj, new Vector2(0.52f, 0.05f), new Vector2(0.92f, 0.10f));
+            var replayBtn = replayBtnObj.AddComponent<Button>();
+            replayBtn.onClick.AddListener(() => {
+                if (GameManager.Instance != null && GameManager.Instance.replaySystem != null
+                    && GameManager.Instance.replaySystem.HasRecording)
+                {
+                    GameManager.Instance.replaySystem.StartPlayback();
+                }
+            });
+            var replayLabel = UIFactory.CreateText("ReplayLabel", replayBtnObj.transform,
+                "WATCH REPLAY", 14, new Color(0.5f, 0.5f, 1f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(replayLabel, new Vector2(0, 0), new Vector2(1, 1));
 
             // Footer
             var footer = UIFactory.CreateText("Footer", menuPanel.transform,
-                "Tap a mode to begin your take", 11, new Color(0.45f, 0.45f, 0.45f),
+                "Tap a mode to begin your take", 9, new Color(0.45f, 0.45f, 0.45f),
                 FontStyles.Normal, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.01f), new Vector2(0.9f, 0.05f));
+            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.01f), new Vector2(0.9f, 0.045f));
         }
 
         private void CreateModeButton(string label, string desc, GameMode mode,
