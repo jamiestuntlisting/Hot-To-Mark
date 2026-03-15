@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
 using HotToMark.Scoring;
+using HotToMark.Environment;
 
 namespace HotToMark.UI
 {
@@ -46,6 +47,10 @@ namespace HotToMark.UI
         private TextMeshProUGUI reverseTimeText;
         private TextMeshProUGUI hurryText;
         private TextMeshProUGUI reverseMaxSpeedText;
+
+        // Obstacles & Multi-mark (F-8, F-10)
+        private TextMeshProUGUI obstacleHitText;
+        private TextMeshProUGUI multiMarkText;
 
         private GameState state;
 
@@ -106,6 +111,16 @@ namespace HotToMark.UI
             checkpointResultText = CreateHUDText("CheckpointResult", exactMPHGroup.transform,
                 "", 14, Color.green, FontStyles.Normal, 20);
             exactMPHGroup.SetActive(false);
+
+            // Multi-mark progress (F-8)
+            multiMarkText = CreateHUDText("MultiMark", drivingGroup.transform,
+                "", 13, new Color(1f, 0.6f, 0), FontStyles.Normal, 18);
+            multiMarkText.gameObject.SetActive(false);
+
+            // Obstacle hit counter (F-10)
+            obstacleHitText = CreateHUDText("ObstacleHits", drivingGroup.transform,
+                "", 13, new Color(1f, 0.4f, 0.4f), FontStyles.Normal, 18);
+            obstacleHitText.gameObject.SetActive(false);
 
             drivingGroup.SetActive(false);
 
@@ -292,6 +307,35 @@ namespace HotToMark.UI
                     checkpointResultText.color = state.exactMPHAccuracy > 80 ?
                         Color.green : new Color(1f, 0.65f, 0);
                 }
+            }
+
+            // Multi-mark progress (F-8)
+            var mm = GameManager.Instance?.multiMarkSystem;
+            if (mm != null && mm.marks.Count > 1)
+            {
+                multiMarkText.gameObject.SetActive(true);
+                multiMarkText.text = $"Marks: {mm.currentMarkIndex}/{mm.marks.Count}";
+            }
+            else
+            {
+                multiMarkText.gameObject.SetActive(false);
+            }
+
+            // Obstacle hit counter (F-10)
+            var obs = GameManager.Instance?.obstacleSystem;
+            if (obs != null && obs.totalObstacles > 0)
+            {
+                obstacleHitText.gameObject.SetActive(true);
+                obstacleHitText.text = obs.obstaclesHit > 0
+                    ? $"Obstacles hit: {obs.obstaclesHit} (-{obs.GetPenaltyPoints()} pts)"
+                    : $"Obstacles: {obs.totalObstacles} on course";
+                obstacleHitText.color = obs.obstaclesHit > 0
+                    ? new Color(1f, 0.4f, 0.4f)
+                    : new Color(0.6f, 0.6f, 0.6f);
+            }
+            else
+            {
+                obstacleHitText.gameObject.SetActive(false);
             }
         }
 

@@ -109,6 +109,15 @@ namespace HotToMark.Core
                 obstacleSystem.SpawnObstacles(difficulty, state.markDistance);
             }
 
+            // Multi-mark setup (F-8) — use multi-marks on higher takes
+            if (multiMarkSystem != null)
+            {
+                MultiMarkPattern pattern = MultiMarkPattern.Single;
+                if (state.takeNumber >= 6) pattern = MultiMarkPattern.ThreeMarks;
+                else if (state.takeNumber >= 3) pattern = MultiMarkPattern.TwoMarks;
+                multiMarkSystem.SetupPattern(pattern, state.markDistance);
+            }
+
             // Start recording replay (F-5)
             if (replaySystem != null)
                 replaySystem.StartRecording();
@@ -196,6 +205,10 @@ namespace HotToMark.Core
             // Smoothness: scale jerk accumulation so typical play scores well
             // Average take accumulates ~20-60 jerk units; map to 0-100
             state.smoothnessScore = Mathf.Clamp(100f - state.jerkAccum * 1.2f, 0f, 100f);
+
+            // Override mark accuracy with multi-mark aggregate if applicable (F-8)
+            if (multiMarkSystem != null && multiMarkSystem.marks.Count > 1)
+                state.markAccuracy = multiMarkSystem.aggregateAccuracy;
 
             state.phase = GamePhase.Results;
 

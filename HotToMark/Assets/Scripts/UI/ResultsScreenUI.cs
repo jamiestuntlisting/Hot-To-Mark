@@ -147,12 +147,27 @@ namespace HotToMark.UI
 
             // Leaderboard button (F-4)
             var lbBtnObj = CreateResultButton("Leaderboards", resultsPanel.transform,
-                new Vector2(0.25f, 0.13f), new Vector2(0.75f, 0.17f),
+                new Vector2(0.08f, 0.13f), new Vector2(0.48f, 0.17f),
                 new Color(0.15f, 0.15f, 0.35f));
             var lbBtn = lbBtnObj.GetComponent<Button>();
             lbBtn.onClick.AddListener(() => {
                 if (Scoring.GameCenterManager.Instance != null && lastState != null)
                     Scoring.GameCenterManager.Instance.ShowLeaderboard(lastState.mode);
+            });
+
+            // Watch Replay button (F-5)
+            var replayBtnObj = CreateResultButton("Watch Replay", resultsPanel.transform,
+                new Vector2(0.52f, 0.13f), new Vector2(0.92f, 0.17f),
+                new Color(0.15f, 0.25f, 0.15f));
+            var replayBtn = replayBtnObj.GetComponent<Button>();
+            replayBtn.onClick.AddListener(() => {
+                if (GameManager.Instance != null
+                    && GameManager.Instance.replaySystem != null
+                    && GameManager.Instance.replaySystem.HasRecording)
+                {
+                    resultsPanel.SetActive(false);
+                    GameManager.Instance.replaySystem.StartPlayback();
+                }
             });
 
             resultsPanel.SetActive(false);
