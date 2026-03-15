@@ -145,6 +145,16 @@ namespace HotToMark.UI
             backToMenuButton = menuBtnObj.GetComponent<Button>();
             backToMenuButton.onClick.AddListener(OnBackToMenu);
 
+            // Leaderboard button (F-4)
+            var lbBtnObj = CreateResultButton("Leaderboards", resultsPanel.transform,
+                new Vector2(0.25f, 0.13f), new Vector2(0.75f, 0.17f),
+                new Color(0.15f, 0.15f, 0.35f));
+            var lbBtn = lbBtnObj.GetComponent<Button>();
+            lbBtn.onClick.AddListener(() => {
+                if (Scoring.GameCenterManager.Instance != null && lastState != null)
+                    Scoring.GameCenterManager.Instance.ShowLeaderboard(lastState.mode);
+            });
+
             resultsPanel.SetActive(false);
         }
 

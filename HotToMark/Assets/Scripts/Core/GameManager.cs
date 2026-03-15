@@ -33,6 +33,8 @@ namespace HotToMark.Core
         public PIPCameraController pipCamera;
         public PauseMenuUI pauseMenu;
         public DirectorFeedback directorFeedback;
+        public RoadManager roadManager;
+        public WeatherSystem weatherSystem;
 
         public static GameManager Instance { get; private set; }
 
@@ -81,6 +83,19 @@ namespace HotToMark.Core
                 if (vIdx < configs.Length)
                     carController.ApplyVehicle(configs[vIdx]);
             }
+
+            // Apply selected set/location (F-2)
+            if (roadManager != null)
+            {
+                var sets = Environment.SetConfig.GetDefaults();
+                int sIdx = (int)state.selectedSet;
+                if (sIdx < sets.Length)
+                    roadManager.ApplySet(sets[sIdx]);
+            }
+
+            // Apply weather (F-7)
+            if (weatherSystem != null)
+                weatherSystem.ApplyWeather(state.selectedWeather);
 
             if (mainMenu != null) mainMenu.Hide();
             if (resultsScreen != null) resultsScreen.Hide();
@@ -175,8 +190,10 @@ namespace HotToMark.Core
             {
                 ScoreResult result = scoreManager.CalculateScore(state);
 
-                // Save high score
+                // Save high score (local + Game Center)
                 HighScoreManager.SaveScore(state.mode, result.totalScore);
+                if (GameCenterManager.Instance != null)
+                    GameCenterManager.Instance.ReportScore(state.mode, result.totalScore);
 
                 // Director feedback on overall performance (F-6)
                 if (directorFeedback != null) directorFeedback.OnTakeComplete(result);

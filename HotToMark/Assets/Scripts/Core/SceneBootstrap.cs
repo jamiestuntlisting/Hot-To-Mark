@@ -121,7 +121,7 @@ namespace HotToMark.Core
             // ---- Road (Stage 2) ----
             var roadObj = new GameObject("Road");
             roadObj.transform.SetParent(environmentRoot.transform);
-            roadObj.AddComponent<RoadManager>();
+            var roadManager = roadObj.AddComponent<RoadManager>();
 
             // ---- Mark System (Stage 3) ----
             var markObj = new GameObject("MarkSystem");
@@ -227,6 +227,17 @@ namespace HotToMark.Core
             gm.pipCamera = pipController;
             gm.pauseMenu = pauseMenu;
             gm.directorFeedback = directorFeedback;
+            gm.roadManager = roadManager;
+            gm.weatherSystem = weatherSystem;
+
+            // ---- Weather System (F-7) ----
+            var weatherObj = new GameObject("WeatherSystem");
+            weatherObj.transform.SetParent(environmentRoot.transform);
+            var weatherSystem = weatherObj.AddComponent<WeatherSystem>();
+
+            // ---- Game Center (F-4) ----
+            var gcObj = new GameObject("GameCenter");
+            gcObj.AddComponent<GameCenterManager>();
 
             // ---- Visual Polish (Stage 8) ----
             var polishObj = new GameObject("VisualPolish");
