@@ -66,7 +66,7 @@ namespace HotToMark.Core
             if (mainMenu != null) mainMenu.Show();
             if (resultsScreen != null) resultsScreen.Hide();
             if (hud != null) hud.Hide();
-            if (pipCamera != null) pipCamera.SetActive(false);
+            if (pipCamera != null) pipCamera.gameObject.SetActive(false);
             if (pauseMenu != null) pauseMenu.Hide();
             if (careerMenu != null) careerMenu.Hide();
         }
@@ -126,7 +126,7 @@ namespace HotToMark.Core
             if (careerMenu != null) careerMenu.Hide();
             if (resultsScreen != null) resultsScreen.Hide();
             if (hud != null) hud.Show();
-            if (pipCamera != null) pipCamera.SetActive(true);
+            if (pipCamera != null) pipCamera.gameObject.SetActive(true);
             if (markSystem != null) markSystem.SetupMark(state.markDistance);
             if (crewManager != null) crewManager.SpawnCrew();
             if (hornSystem != null) hornSystem.ResetHorn();
@@ -217,7 +217,7 @@ namespace HotToMark.Core
 
             if (engineAudio != null) engineAudio.StopEngine();
             if (hud != null) hud.Hide();
-            if (pipCamera != null) pipCamera.SetActive(false);
+            if (pipCamera != null) pipCamera.gameObject.SetActive(false);
 
             if (scoreManager != null)
             {
