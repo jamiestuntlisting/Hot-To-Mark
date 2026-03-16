@@ -36,7 +36,7 @@ namespace HotToMark.UI
             brakePedalZone = brakeObj.GetComponent<Image>();
 
             var brakeLabel = UIFactory.CreateText("BrakeLabel", brakeObj.transform,
-                "BRAKE", 14, new Color(1f, 0.3f, 0.3f, 0.6f),
+                "BRAKE", 42, new Color(1f, 0.3f, 0.3f, 0.6f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(brakeLabel, new Vector2(0, 0), new Vector2(1, 1));
 
@@ -46,7 +46,7 @@ namespace HotToMark.UI
             gasPedalZone = gasObj.GetComponent<Image>();
 
             var gasLabel = UIFactory.CreateText("GasLabel", gasObj.transform,
-                "GAS", 14, new Color(0.3f, 1f, 0.3f, 0.6f),
+                "GAS", 42, new Color(0.3f, 1f, 0.3f, 0.6f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(gasLabel, new Vector2(0, 0), new Vector2(1, 1));
 
@@ -57,7 +57,7 @@ namespace HotToMark.UI
             hornImage = hornObj.GetComponent<Image>();
 
             var hornLabel = UIFactory.CreateText("HornLabel", hornObj.transform,
-                "HORN", 16, new Color(1f, 0.85f, 0.2f, 0.7f),
+                "HORN", 48, new Color(1f, 0.85f, 0.2f, 0.7f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(hornLabel, new Vector2(0, 0), new Vector2(1, 1));
 

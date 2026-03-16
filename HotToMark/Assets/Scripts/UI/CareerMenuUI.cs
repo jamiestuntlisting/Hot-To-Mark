@@ -7,14 +7,18 @@ using HotToMark.Scoring;
 namespace HotToMark.UI
 {
     /// <summary>
-    /// F-3: Career mode scene selection screen.
+    /// Career mode scene selection screen.
     /// Shows a scrollable list of scenes with star ratings and lock states.
+    /// Keyboard: Up/Down to navigate, Enter/Space to select, Escape to go back.
     /// </summary>
     public class CareerMenuUI : MonoBehaviour
     {
         private GameObject careerPanel;
         private Transform sceneListContainer;
         private TextMeshProUGUI starCountText;
+        private int selectedIndex = 0;
+        private int sceneCount = 0;
+        private Image[] itemBackgrounds;
 
         void Awake()
         {
@@ -30,26 +34,26 @@ namespace HotToMark.UI
             var topBar = UIFactory.CreateImage("TopBar", careerPanel.transform,
                 new Color(1f, 0.6f, 0, 0.9f));
             UIFactory.SetAnchors(topBar, new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 6));
+                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 8));
 
-            // Title
+            // Title — 3x (36 -> 108)
             var title = UIFactory.CreateText("Title", careerPanel.transform,
-                "CAREER MODE", 36, new Color(1f, 0.6f, 0),
+                "CAREER MODE", 108, new Color(1f, 0.6f, 0),
                 FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(title, new Vector2(0.1f, 0.90f), new Vector2(0.9f, 0.97f));
+            UIFactory.SetAnchors(title, new Vector2(0.05f, 0.85f), new Vector2(0.95f, 0.97f));
 
-            // Star count
+            // Star count — 3x (16 -> 48)
             var starObj = UIFactory.CreateText("Stars", careerPanel.transform,
-                "0/36", 16, new Color(1f, 0.85f, 0.2f),
+                "0/36", 48, new Color(1f, 0.85f, 0.2f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(starObj, new Vector2(0.1f, 0.86f), new Vector2(0.9f, 0.90f));
+            UIFactory.SetAnchors(starObj, new Vector2(0.1f, 0.78f), new Vector2(0.9f, 0.85f));
             starCountText = starObj.GetComponent<TextMeshProUGUI>();
 
             // Scene list area (scrollable)
             var scrollArea = new GameObject("ScrollArea");
             scrollArea.transform.SetParent(careerPanel.transform, false);
             var scrollRect = scrollArea.AddComponent<RectTransform>();
-            UIFactory.SetAnchors(scrollArea, new Vector2(0.05f, 0.10f), new Vector2(0.95f, 0.85f));
+            UIFactory.SetAnchors(scrollArea, new Vector2(0.05f, 0.14f), new Vector2(0.95f, 0.76f));
 
             var mask = scrollArea.AddComponent<RectMask2D>();
 
@@ -59,12 +63,12 @@ namespace HotToMark.UI
             contentRect.anchorMin = new Vector2(0, 1);
             contentRect.anchorMax = new Vector2(1, 1);
             contentRect.pivot = new Vector2(0.5f, 1);
-            contentRect.sizeDelta = new Vector2(0, 800);
+            contentRect.sizeDelta = new Vector2(0, 1600);
 
             var vlg = content.AddComponent<VerticalLayoutGroup>();
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
-            vlg.spacing = 8;
+            vlg.spacing = 12;
             vlg.padding = new RectOffset(0, 0, 4, 4);
             vlg.childAlignment = TextAnchor.UpperCenter;
 
@@ -79,10 +83,10 @@ namespace HotToMark.UI
 
             sceneListContainer = content.transform;
 
-            // Back button
+            // Back button — 3x (16 -> 48)
             var backBtn = UIFactory.CreateImage("BackBtn", careerPanel.transform,
                 new Color(0.3f, 0.3f, 0.3f));
-            UIFactory.SetAnchors(backBtn, new Vector2(0.3f, 0.02f), new Vector2(0.7f, 0.08f));
+            UIFactory.SetAnchors(backBtn, new Vector2(0.25f, 0.02f), new Vector2(0.75f, 0.11f));
             var btn = backBtn.AddComponent<Button>();
             btn.onClick.AddListener(() => {
                 Hide();
@@ -90,15 +94,80 @@ namespace HotToMark.UI
                     GameManager.Instance.ShowMenu();
             });
             var label = UIFactory.CreateText("Label", backBtn.transform,
-                "BACK", 16, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                "BACK", 48, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(label, new Vector2(0, 0), new Vector2(1, 1));
 
+            // Footer hint
+            var footer = UIFactory.CreateText("Footer", careerPanel.transform,
+                "Arrow keys to browse, ENTER to play, ESC to go back", 24,
+                new Color(0.45f, 0.45f, 0.45f),
+                FontStyles.Normal, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(footer, new Vector2(0.05f, 0.115f), new Vector2(0.95f, 0.14f));
+
             careerPanel.SetActive(false);
+        }
+
+        void Update()
+        {
+            if (careerPanel == null || !careerPanel.activeSelf) return;
+            if (sceneCount == 0) return;
+
+            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            {
+                selectedIndex = Mathf.Max(0, selectedIndex - 1);
+                UpdateSelectionHighlight();
+            }
+            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            {
+                selectedIndex = Mathf.Min(sceneCount - 1, selectedIndex + 1);
+                UpdateSelectionHighlight();
+            }
+            else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
+                     || Input.GetKeyDown(KeyCode.Space))
+            {
+                var career = CareerManager.Instance;
+                if (career != null && selectedIndex < career.scenes.Length
+                    && career.scenes[selectedIndex].unlocked)
+                {
+                    Hide();
+                    career.StartScene(selectedIndex);
+                }
+            }
+            else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace))
+            {
+                Hide();
+                if (GameManager.Instance != null)
+                    GameManager.Instance.ShowMenu();
+            }
+        }
+
+        private void UpdateSelectionHighlight()
+        {
+            if (itemBackgrounds == null) return;
+            var career = CareerManager.Instance;
+            if (career == null) return;
+
+            for (int i = 0; i < itemBackgrounds.Length; i++)
+            {
+                if (itemBackgrounds[i] == null) continue;
+                bool isSelected = (i == selectedIndex);
+                bool unlocked = i < career.scenes.Length && career.scenes[i].unlocked;
+
+                if (isSelected)
+                    itemBackgrounds[i].color = unlocked
+                        ? new Color(0.2f, 0.18f, 0.08f)
+                        : new Color(0.12f, 0.10f, 0.06f);
+                else
+                    itemBackgrounds[i].color = unlocked
+                        ? new Color(0.1f, 0.1f, 0.12f)
+                        : new Color(0.06f, 0.06f, 0.06f);
+            }
         }
 
         public void Show()
         {
             careerPanel.SetActive(true);
+            selectedIndex = 0;
             RefreshSceneList();
         }
 
@@ -117,12 +186,29 @@ namespace HotToMark.UI
             var career = CareerManager.Instance;
             if (career == null) return;
 
+            sceneCount = career.scenes.Length;
+            itemBackgrounds = new Image[sceneCount];
             starCountText.text = $"{career.TotalStars()}/{career.MaxStars()}";
+
+            // Auto-select first unlocked scene
+            selectedIndex = 0;
+            for (int i = 0; i < career.scenes.Length; i++)
+            {
+                if (career.scenes[i].unlocked && career.scenes[i].bestStars == 0)
+                {
+                    selectedIndex = i;
+                    break;
+                }
+                if (i == career.scenes.Length - 1)
+                    selectedIndex = i; // last one
+            }
 
             for (int i = 0; i < career.scenes.Length; i++)
             {
                 CreateSceneItem(career.scenes[i], i);
             }
+
+            UpdateSelectionHighlight();
         }
 
         private void CreateSceneItem(CareerScene scene, int index)
@@ -131,7 +217,7 @@ namespace HotToMark.UI
             item.transform.SetParent(sceneListContainer, false);
 
             var le = item.AddComponent<LayoutElement>();
-            le.preferredHeight = 70;
+            le.preferredHeight = 120;
             le.flexibleWidth = 1;
 
             Color bgColor = scene.unlocked
@@ -139,10 +225,11 @@ namespace HotToMark.UI
                 : new Color(0.06f, 0.06f, 0.06f);
             var bg = item.AddComponent<Image>();
             bg.color = bgColor;
+            itemBackgrounds[index] = bg;
 
-            // Scene number
+            // Scene number — 3x (24 -> 72)
             var numObj = UIFactory.CreateText("Num", item.transform,
-                $"{index + 1}", 24, scene.unlocked
+                $"{index + 1}", 72, scene.unlocked
                     ? new Color(1f, 0.6f, 0) : new Color(0.3f, 0.3f, 0.3f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
             var numRect = numObj.GetComponent<RectTransform>();
@@ -151,34 +238,34 @@ namespace HotToMark.UI
             numRect.offsetMin = Vector2.zero;
             numRect.offsetMax = Vector2.zero;
 
-            // Name
+            // Name — 3x (16 -> 48)
             Color textColor = scene.unlocked ? Color.white : new Color(0.35f, 0.35f, 0.35f);
             var nameObj = UIFactory.CreateText("Name", item.transform,
                 scene.unlocked ? scene.name : "LOCKED",
-                16, textColor, FontStyles.Bold, TextAlignmentOptions.Left);
+                48, textColor, FontStyles.Bold, TextAlignmentOptions.Left);
             var nameRect = nameObj.GetComponent<RectTransform>();
-            nameRect.anchorMin = new Vector2(0.14f, 0.5f);
+            nameRect.anchorMin = new Vector2(0.14f, 0.45f);
             nameRect.anchorMax = new Vector2(0.75f, 1);
             nameRect.offsetMin = Vector2.zero;
             nameRect.offsetMax = Vector2.zero;
 
-            // Description
+            // Description — 3x (10 -> 30)
             var descObj = UIFactory.CreateText("Desc", item.transform,
                 scene.unlocked ? scene.description : "",
-                10, new Color(0.5f, 0.5f, 0.5f),
+                30, new Color(0.5f, 0.5f, 0.5f),
                 FontStyles.Italic, TextAlignmentOptions.Left);
             var descRect = descObj.GetComponent<RectTransform>();
             descRect.anchorMin = new Vector2(0.14f, 0);
-            descRect.anchorMax = new Vector2(0.75f, 0.5f);
+            descRect.anchorMax = new Vector2(0.75f, 0.45f);
             descRect.offsetMin = Vector2.zero;
             descRect.offsetMax = Vector2.zero;
 
-            // Stars
+            // Stars — 3x (20 -> 60)
             string starStr = "";
             for (int s = 0; s < 3; s++)
                 starStr += s < scene.bestStars ? "<color=#FFD700>*</color>" : "<color=#333>*</color>";
             var starObj = UIFactory.CreateText("Stars", item.transform,
-                starStr, 20, Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
+                starStr, 60, Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             starObj.GetComponent<TextMeshProUGUI>().richText = true;
             var starRect = starObj.GetComponent<RectTransform>();
             starRect.anchorMin = new Vector2(0.78f, 0.3f);
@@ -186,11 +273,11 @@ namespace HotToMark.UI
             starRect.offsetMin = Vector2.zero;
             starRect.offsetMax = Vector2.zero;
 
-            // Best score
+            // Best score — 3x (9 -> 27)
             if (scene.bestScore > 0)
             {
                 var scoreObj = UIFactory.CreateText("Best", item.transform,
-                    $"Best: {scene.bestScore}", 9, new Color(0.5f, 0.5f, 0.5f),
+                    $"Best: {scene.bestScore}", 27, new Color(0.5f, 0.5f, 0.5f),
                     FontStyles.Normal, TextAlignmentOptions.Center);
                 var scoreRect = scoreObj.GetComponent<RectTransform>();
                 scoreRect.anchorMin = new Vector2(0.78f, 0);
@@ -199,7 +286,7 @@ namespace HotToMark.UI
                 scoreRect.offsetMax = Vector2.zero;
             }
 
-            // Button
+            // Button (click to play)
             if (scene.unlocked)
             {
                 var btn = item.AddComponent<Button>();

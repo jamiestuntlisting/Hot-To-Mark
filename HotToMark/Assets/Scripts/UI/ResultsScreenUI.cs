@@ -8,15 +8,15 @@ using System.Collections.Generic;
 namespace HotToMark.UI
 {
     /// <summary>
-    /// Stage 4: Results screen shown after completing a take.
-    /// Self-builds its own UI hierarchy. Displays total score, letter grade,
-    /// breakdown, penalties, and stats.
+    /// Results screen shown after completing a take.
+    /// Keyboard: Enter/Space to play again, Escape to go back to menu.
+    /// Text sizes 3x for readability.
     /// </summary>
     public class ResultsScreenUI : MonoBehaviour
     {
         private GameObject resultsPanel;
 
-        // Dynamic text elements (set during Build, updated during Show)
+        // Dynamic text elements
         private TextMeshProUGUI headerText;
         private TextMeshProUGUI scoreText;
         private TextMeshProUGUI gradeText;
@@ -45,56 +45,56 @@ namespace HotToMark.UI
             var topBar = UIFactory.CreateImage("TopBar", resultsPanel.transform,
                 new Color(1f, 0.6f, 0, 0.9f));
             UIFactory.SetAnchors(topBar, new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 6));
+                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 8));
 
-            // Header
+            // Header — 3x (36 -> 108)
             var headerObj = UIFactory.CreateText("Header", resultsPanel.transform,
-                "TAKE COMPLETE", 36, new Color(1f, 0.6f, 0),
+                "TAKE COMPLETE", 108, new Color(1f, 0.6f, 0),
                 FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(headerObj, new Vector2(0.1f, 0.88f), new Vector2(0.9f, 0.96f));
+            UIFactory.SetAnchors(headerObj, new Vector2(0.05f, 0.85f), new Vector2(0.95f, 0.97f));
             headerText = headerObj.GetComponent<TextMeshProUGUI>();
 
-            // Score
+            // Score — 3x (52 -> 156) — keep it reasonable at 80 to fit
             var scoreObj = UIFactory.CreateText("Score", resultsPanel.transform,
-                "0/100", 52, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(scoreObj, new Vector2(0.1f, 0.76f), new Vector2(0.55f, 0.88f));
+                "0/100", 80, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(scoreObj, new Vector2(0.05f, 0.72f), new Vector2(0.55f, 0.85f));
             scoreText = scoreObj.GetComponent<TextMeshProUGUI>();
 
-            // Grade
+            // Grade — 3x (72 -> 216) — cap at 120
             var gradeObj = UIFactory.CreateText("Grade", resultsPanel.transform,
-                "F", 72, Color.red, FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(gradeObj, new Vector2(0.55f, 0.76f), new Vector2(0.9f, 0.88f));
+                "F", 120, Color.red, FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(gradeObj, new Vector2(0.55f, 0.72f), new Vector2(0.95f, 0.85f));
             gradeText = gradeObj.GetComponent<TextMeshProUGUI>();
 
             // Divider
             var divider = UIFactory.CreateImage("Divider", resultsPanel.transform,
                 new Color(1f, 0.6f, 0, 0.3f));
-            UIFactory.SetAnchors(divider, new Vector2(0.1f, 0.74f), new Vector2(0.9f, 0.745f));
+            UIFactory.SetAnchors(divider, new Vector2(0.1f, 0.70f), new Vector2(0.9f, 0.705f));
 
-            // Breakdown section header
+            // Breakdown section header — 3x (14 -> 42)
             var breakdownLabel = UIFactory.CreateText("BreakdownLabel", resultsPanel.transform,
-                "SCORE BREAKDOWN", 14, new Color(1f, 0.6f, 0),
+                "SCORE BREAKDOWN", 42, new Color(1f, 0.6f, 0),
                 FontStyles.Bold, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(breakdownLabel, new Vector2(0.08f, 0.68f), new Vector2(0.9f, 0.73f));
+            UIFactory.SetAnchors(breakdownLabel, new Vector2(0.06f, 0.63f), new Vector2(0.94f, 0.70f));
 
-            // Mark accuracy line
+            // Mark accuracy line — 3x (16 -> 48)
             var markObj = UIFactory.CreateText("MarkAccuracy", resultsPanel.transform,
-                "", 16, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(markObj, new Vector2(0.08f, 0.62f), new Vector2(0.92f, 0.68f));
+                "", 48, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
+            UIFactory.SetAnchors(markObj, new Vector2(0.06f, 0.55f), new Vector2(0.94f, 0.63f));
             markAccuracyLine = markObj.GetComponent<TextMeshProUGUI>();
             markAccuracyLine.richText = true;
 
-            // Return to one line
+            // Return to one line — 3x (16 -> 48)
             var returnObj = UIFactory.CreateText("ReturnToOne", resultsPanel.transform,
-                "", 16, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(returnObj, new Vector2(0.08f, 0.56f), new Vector2(0.92f, 0.62f));
+                "", 48, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
+            UIFactory.SetAnchors(returnObj, new Vector2(0.06f, 0.47f), new Vector2(0.94f, 0.55f));
             returnToOneLine = returnObj.GetComponent<TextMeshProUGUI>();
             returnToOneLine.richText = true;
 
-            // Mode score line
+            // Mode score line — 3x (16 -> 48)
             var modeObj = UIFactory.CreateText("ModeScore", resultsPanel.transform,
-                "", 16, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(modeObj, new Vector2(0.08f, 0.50f), new Vector2(0.92f, 0.56f));
+                "", 48, Color.white, FontStyles.Normal, TextAlignmentOptions.Left);
+            UIFactory.SetAnchors(modeObj, new Vector2(0.06f, 0.39f), new Vector2(0.94f, 0.47f));
             modeScoreLine = modeObj.GetComponent<TextMeshProUGUI>();
             modeScoreLine.richText = true;
 
@@ -102,10 +102,9 @@ namespace HotToMark.UI
             var penaltiesObj = new GameObject("PenaltyContainer");
             penaltiesObj.transform.SetParent(resultsPanel.transform, false);
             var penaltyRect = penaltiesObj.AddComponent<RectTransform>();
-            UIFactory.SetAnchors(penaltiesObj, new Vector2(0.08f, 0.30f), new Vector2(0.92f, 0.48f));
+            UIFactory.SetAnchors(penaltiesObj, new Vector2(0.06f, 0.26f), new Vector2(0.94f, 0.39f));
             penaltyContainer = penaltiesObj.transform;
 
-            // Add a vertical layout group for penalties
             var vlg = penaltiesObj.AddComponent<VerticalLayoutGroup>();
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
@@ -114,61 +113,37 @@ namespace HotToMark.UI
             var csf = penaltiesObj.AddComponent<ContentSizeFitter>();
             csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            // Stats bar
+            // Stats bar — 3x (12 -> 36)
             var statsBg = UIFactory.CreateImage("StatsBg", resultsPanel.transform,
                 new Color(0.08f, 0.08f, 0.08f));
-            UIFactory.SetAnchors(statsBg, new Vector2(0.05f, 0.22f), new Vector2(0.95f, 0.28f));
+            UIFactory.SetAnchors(statsBg, new Vector2(0.05f, 0.19f), new Vector2(0.95f, 0.26f));
 
             var statsObj = UIFactory.CreateText("Stats", statsBg.transform,
-                "", 12, new Color(0.7f, 0.7f, 0.7f),
+                "", 36, new Color(0.7f, 0.7f, 0.7f),
                 FontStyles.Normal, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(statsObj, new Vector2(0, 0), new Vector2(1, 1));
             statsText = statsObj.GetComponent<TextMeshProUGUI>();
 
-            // High score line
+            // High score line — 3x (14 -> 42)
             var highScoreObj = UIFactory.CreateText("HighScore", resultsPanel.transform,
-                "", 14, new Color(1f, 0.85f, 0.2f),
+                "", 42, new Color(1f, 0.85f, 0.2f),
                 FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(highScoreObj, new Vector2(0.1f, 0.17f), new Vector2(0.9f, 0.22f));
+            UIFactory.SetAnchors(highScoreObj, new Vector2(0.1f, 0.13f), new Vector2(0.9f, 0.19f));
             highScoreText = highScoreObj.GetComponent<TextMeshProUGUI>();
 
-            // Buttons
+            // Play Again button — 3x (18 -> 54)
             var playAgainObj = CreateResultButton("Play Again", resultsPanel.transform,
-                new Vector2(0.08f, 0.03f), new Vector2(0.48f, 0.12f),
+                new Vector2(0.06f, 0.02f), new Vector2(0.48f, 0.12f),
                 new Color(1f, 0.6f, 0));
             playAgainButton = playAgainObj.GetComponent<Button>();
             playAgainButton.onClick.AddListener(OnPlayAgain);
 
+            // Back to Menu button — 3x (18 -> 54)
             var menuBtnObj = CreateResultButton("Back to Menu", resultsPanel.transform,
-                new Vector2(0.52f, 0.03f), new Vector2(0.92f, 0.12f),
+                new Vector2(0.52f, 0.02f), new Vector2(0.94f, 0.12f),
                 new Color(0.3f, 0.3f, 0.3f));
             backToMenuButton = menuBtnObj.GetComponent<Button>();
             backToMenuButton.onClick.AddListener(OnBackToMenu);
-
-            // Leaderboard button (F-4)
-            var lbBtnObj = CreateResultButton("Leaderboards", resultsPanel.transform,
-                new Vector2(0.08f, 0.13f), new Vector2(0.48f, 0.17f),
-                new Color(0.15f, 0.15f, 0.35f));
-            var lbBtn = lbBtnObj.GetComponent<Button>();
-            lbBtn.onClick.AddListener(() => {
-                if (Scoring.GameCenterManager.Instance != null && lastState != null)
-                    Scoring.GameCenterManager.Instance.ShowLeaderboard(lastState.mode);
-            });
-
-            // Watch Replay button (F-5)
-            var replayBtnObj = CreateResultButton("Watch Replay", resultsPanel.transform,
-                new Vector2(0.52f, 0.13f), new Vector2(0.92f, 0.17f),
-                new Color(0.15f, 0.25f, 0.15f));
-            var replayBtn = replayBtnObj.GetComponent<Button>();
-            replayBtn.onClick.AddListener(() => {
-                if (GameManager.Instance != null
-                    && GameManager.Instance.replaySystem != null
-                    && GameManager.Instance.replaySystem.HasRecording)
-                {
-                    resultsPanel.SetActive(false);
-                    GameManager.Instance.replaySystem.StartPlayback();
-                }
-            });
 
             resultsPanel.SetActive(false);
         }
@@ -187,10 +162,26 @@ namespace HotToMark.UI
             btn.colors = colors;
 
             var textObj = UIFactory.CreateText("Label", btnObj.transform,
-                label, 18, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                label, 54, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(textObj, new Vector2(0, 0), new Vector2(1, 1));
 
             return btnObj;
+        }
+
+        void Update()
+        {
+            if (resultsPanel == null || !resultsPanel.activeSelf) return;
+
+            // Keyboard: Enter/Space to play again, Escape to go back to menu
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
+                || Input.GetKeyDown(KeyCode.Space))
+            {
+                OnPlayAgain();
+            }
+            else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace))
+            {
+                OnBackToMenu();
+            }
         }
 
         public void Show(ScoreResult result, GameState state)
@@ -204,13 +195,13 @@ namespace HotToMark.UI
             gradeText.color = GradeColor(result.grade);
 
             string missed = result.markAccuracyPct <= 0 ? " <color=#FF5555>MISSED!</color>" : "";
-            markAccuracyLine.text = $"Mark Accuracy: {result.markAccuracyPct:F1}%  —  " +
-                $"<b>{result.markPoints}/40 pts</b>{missed}";
+            markAccuracyLine.text = $"Mark: {result.markAccuracyPct:F1}%  —  " +
+                $"<b>{result.markPoints}/40</b>{missed}";
 
-            returnToOneLine.text = $"Return to One: {result.returnAccuracyPct:F1}%  —  " +
-                $"<b>{result.returnPoints}/20 pts</b>";
+            returnToOneLine.text = $"Return: {result.returnAccuracyPct:F1}%  —  " +
+                $"<b>{result.returnPoints}/20</b>";
 
-            modeScoreLine.text = $"{result.modeLabel}:  <b>{result.modePoints}/40 pts</b>";
+            modeScoreLine.text = $"{result.modeLabel}:  <b>{result.modePoints}/40</b>";
 
             // Clear and rebuild penalties
             foreach (Transform child in penaltyContainer)
@@ -221,16 +212,16 @@ namespace HotToMark.UI
                 var lineObj = new GameObject("Penalty");
                 lineObj.transform.SetParent(penaltyContainer, false);
                 var le = lineObj.AddComponent<LayoutElement>();
-                le.preferredHeight = 22;
+                le.preferredHeight = 44;
 
                 var tmp = lineObj.AddComponent<TextMeshProUGUI>();
                 tmp.text = $"  -{penalty.points}:  {penalty.description}";
-                tmp.fontSize = 14;
+                tmp.fontSize = 42;
                 tmp.color = new Color(1f, 0.33f, 0.33f);
             }
 
-            statsText.text = $"Top Speed: {result.topSpeed:F1} mph   |   " +
-                $"Total Time: {result.totalTime:F1}s   |   " +
+            statsText.text = $"Top: {result.topSpeed:F1} mph  |  " +
+                $"Time: {result.totalTime:F1}s  |  " +
                 $"Mark: {result.markDistance:F0} ft";
 
             // High score display
@@ -239,7 +230,7 @@ namespace HotToMark.UI
             if (result.totalScore >= highScore && plays > 0)
                 highScoreText.text = "NEW HIGH SCORE!";
             else if (highScore > 0)
-                highScoreText.text = $"Personal Best: {highScore}/100 ({HighScoreManager.GetHighGrade(state.mode)})";
+                highScoreText.text = $"Best: {highScore}/100 ({HighScoreManager.GetHighGrade(state.mode)})";
             else
                 highScoreText.text = "";
         }

@@ -2,31 +2,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using HotToMark.Core;
-using HotToMark.Vehicle;
-using HotToMark.Environment;
-using HotToMark.Scoring;
 
 namespace HotToMark.UI
 {
     /// <summary>
-    /// Stage 7: Main menu screen.
-    /// Self-builds its own UI hierarchy at runtime — no serialized field wiring needed.
-    /// Orange/black film-industry visual theme.
+    /// Main menu screen — simple title + single Play button for career mode.
+    /// Keyboard: Enter or Space to start.
     /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
         private GameObject menuPanel;
-        private GameMode lastSelectedMode = GameMode.Standard;
-        private VehicleType selectedVehicle = VehicleType.Sedan;
-        private TextMeshProUGUI vehicleLabelText;
-        private Image[] vehicleButtonBgs = new Image[3];
-
-        private SetType selectedSet = SetType.Backlot;
-        private TextMeshProUGUI setLabelText;
-        private Image[] setButtonBgs = new Image[4];
-
-        private WeatherCondition selectedWeather = WeatherCondition.Clear;
-        private Image[] weatherButtonBgs = new Image[5];
+        private Button playButton;
 
         void Awake()
         {
@@ -43,317 +29,70 @@ namespace HotToMark.UI
             var topBar = UIFactory.CreateImage("TopBar", menuPanel.transform,
                 new Color(1f, 0.6f, 0, 0.9f));
             UIFactory.SetAnchors(topBar, new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 6));
+                new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, 8));
 
-            // Title
+            // Title — 3x original (48 -> 144)
             var title = UIFactory.CreateText("Title", menuPanel.transform,
-                "HOT TO MARK", 48, new Color(1f, 0.6f, 0),
+                "HOT TO MARK", 144, new Color(1f, 0.6f, 0),
                 FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(title, new Vector2(0.1f, 0.78f), new Vector2(0.9f, 0.92f));
+            UIFactory.SetAnchors(title, new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.88f));
 
-            // Subtitle
+            // Subtitle — 3x original (16 -> 48)
             var subtitle = UIFactory.CreateText("Subtitle", menuPanel.transform,
-                "The Stunt Driving Game", 16, new Color(0.7f, 0.7f, 0.7f),
+                "The Stunt Driving Game", 48, new Color(0.7f, 0.7f, 0.7f),
                 FontStyles.Italic, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(subtitle, new Vector2(0.2f, 0.72f), new Vector2(0.8f, 0.78f));
+            UIFactory.SetAnchors(subtitle, new Vector2(0.1f, 0.42f), new Vector2(0.9f, 0.55f));
 
             // Divider line
             var divider = UIFactory.CreateImage("Divider", menuPanel.transform,
                 new Color(1f, 0.6f, 0, 0.3f));
-            UIFactory.SetAnchors(divider, new Vector2(0.15f, 0.70f), new Vector2(0.85f, 0.705f));
+            UIFactory.SetAnchors(divider, new Vector2(0.2f, 0.38f), new Vector2(0.8f, 0.385f));
 
-            // ---- Vehicle Selector (F-1) ----
-            var vehicleLabel = UIFactory.CreateText("VehicleLabel", menuPanel.transform,
-                "SELECT VEHICLE", 13, new Color(1f, 0.6f, 0),
-                FontStyles.Bold, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(vehicleLabel, new Vector2(0.1f, 0.65f), new Vector2(0.9f, 0.695f));
-
-            CreateVehicleButton("Sedan", VehicleType.Sedan, 0, menuPanel.transform);
-            CreateVehicleButton("Muscle", VehicleType.MuscleCar, 1, menuPanel.transform);
-            CreateVehicleButton("SUV", VehicleType.SUV, 2, menuPanel.transform);
-
-            vehicleLabelText = UIFactory.CreateText("VehicleDesc", menuPanel.transform,
-                "Balanced handling. The industry standard.", 10,
-                new Color(0.5f, 0.5f, 0.5f), FontStyles.Italic, TextAlignmentOptions.Center)
-                .GetComponent<TextMeshProUGUI>();
-            UIFactory.SetAnchors(vehicleLabelText.gameObject,
-                new Vector2(0.1f, 0.58f), new Vector2(0.9f, 0.62f));
-
-            UpdateVehicleHighlight();
-
-            // ---- Set/Location Selector (F-2) ----
-            var setLabel = UIFactory.CreateText("SetLabel", menuPanel.transform,
-                "SELECT LOCATION", 13, new Color(1f, 0.6f, 0),
-                FontStyles.Bold, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(setLabel, new Vector2(0.1f, 0.545f), new Vector2(0.9f, 0.575f));
-
-            CreateSetButton("Backlot", SetType.Backlot, 0, menuPanel.transform);
-            CreateSetButton("Desert", SetType.Desert, 1, menuPanel.transform);
-            CreateSetButton("City", SetType.City, 2, menuPanel.transform);
-            CreateSetButton("Garage", SetType.ParkingStructure, 3, menuPanel.transform);
-
-            setLabelText = UIFactory.CreateText("SetDesc", menuPanel.transform,
-                "Classic film lot. Green grass, blue sky.", 10,
-                new Color(0.5f, 0.5f, 0.5f), FontStyles.Italic, TextAlignmentOptions.Center)
-                .GetComponent<TextMeshProUGUI>();
-            UIFactory.SetAnchors(setLabelText.gameObject,
-                new Vector2(0.1f, 0.48f), new Vector2(0.9f, 0.52f));
-
-            UpdateSetHighlight();
-
-            // ---- Weather Selector (F-7) ----
-            var weatherLabel = UIFactory.CreateText("WeatherLabel", menuPanel.transform,
-                "CONDITIONS", 11, new Color(0.7f, 0.7f, 0.7f),
-                FontStyles.Bold, TextAlignmentOptions.Left);
-            UIFactory.SetAnchors(weatherLabel, new Vector2(0.1f, 0.445f), new Vector2(0.9f, 0.47f));
-
-            CreateWeatherButton("Clear", WeatherCondition.Clear, 0, menuPanel.transform);
-            CreateWeatherButton("Overcast", WeatherCondition.Overcast, 1, menuPanel.transform);
-            CreateWeatherButton("Rain", WeatherCondition.Rain, 2, menuPanel.transform);
-            CreateWeatherButton("Golden", WeatherCondition.GoldenHour, 3, menuPanel.transform);
-            CreateWeatherButton("Night", WeatherCondition.Night, 4, menuPanel.transform);
-
-            UpdateWeatherHighlight();
-
-            // Mode buttons
-            CreateModeButton("Standard Take",
-                "Drive to the mark, stop accurately, reverse to one.",
-                GameMode.Standard, 0.375f, menuPanel.transform);
-
-            CreateModeButton("Speed Run",
-                "Complete the entire take as fast as possible.",
-                GameMode.SpeedRun, 0.295f, menuPanel.transform);
-
-            CreateModeButton("Smooth Operator",
-                "Minimize jerky inputs. Be cinematic.",
-                GameMode.SmoothOperator, 0.215f, menuPanel.transform);
-
-            CreateModeButton("Exact MPH",
-                "Hit exactly the target speed at the checkpoint.",
-                GameMode.ExactMPH, 0.135f, menuPanel.transform);
-
-            // Career Mode button (F-3)
-            var careerBtnObj = UIFactory.CreateImage("CareerBtn", menuPanel.transform,
-                new Color(0.15f, 0.25f, 0.15f));
-            UIFactory.SetAnchors(careerBtnObj, new Vector2(0.08f, 0.05f), new Vector2(0.50f, 0.10f));
-            var careerBtn = careerBtnObj.AddComponent<Button>();
-            careerBtn.onClick.AddListener(() => {
-                Hide();
-                if (GameManager.Instance != null && GameManager.Instance.careerMenu != null)
-                    GameManager.Instance.careerMenu.Show();
-            });
-            var careerLabel = UIFactory.CreateText("CareerLabel", careerBtnObj.transform,
-                "CAREER MODE", 14, new Color(0.5f, 1f, 0.5f),
-                FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(careerLabel, new Vector2(0, 0), new Vector2(1, 1));
-
-            // Watch Replay button (F-5)
-            var replayBtnObj = UIFactory.CreateImage("ReplayBtn", menuPanel.transform,
-                new Color(0.15f, 0.15f, 0.25f));
-            UIFactory.SetAnchors(replayBtnObj, new Vector2(0.52f, 0.05f), new Vector2(0.92f, 0.10f));
-            var replayBtn = replayBtnObj.AddComponent<Button>();
-            replayBtn.onClick.AddListener(() => {
-                if (GameManager.Instance != null && GameManager.Instance.replaySystem != null
-                    && GameManager.Instance.replaySystem.HasRecording)
-                {
-                    GameManager.Instance.replaySystem.StartPlayback();
-                }
-            });
-            var replayLabel = UIFactory.CreateText("ReplayLabel", replayBtnObj.transform,
-                "WATCH REPLAY", 14, new Color(0.5f, 0.5f, 1f),
-                FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(replayLabel, new Vector2(0, 0), new Vector2(1, 1));
-
-            // Footer
-            var footer = UIFactory.CreateText("Footer", menuPanel.transform,
-                "Tap a mode to begin your take", 9, new Color(0.45f, 0.45f, 0.45f),
-                FontStyles.Normal, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.01f), new Vector2(0.9f, 0.045f));
-        }
-
-        private void CreateModeButton(string label, string desc, GameMode mode,
-            float yCenter, Transform parent)
-        {
-            float btnHeight = 0.09f;
-            float descHeight = 0.03f;
-
-            // Button background
-            var btnObj = UIFactory.CreateImage($"Btn_{label}", parent,
-                new Color(0.1f, 0.1f, 0.1f));
-            UIFactory.SetAnchors(btnObj, new Vector2(0.1f, yCenter),
-                new Vector2(0.9f, yCenter + btnHeight));
-
-            // Orange left accent
-            var accent = UIFactory.CreateImage("Accent", btnObj.transform,
+            // Play button — big and centered
+            var playBtnObj = UIFactory.CreateImage("PlayBtn", menuPanel.transform,
                 new Color(1f, 0.6f, 0));
-            UIFactory.SetAnchors(accent, new Vector2(0, 0), new Vector2(0.01f, 1));
+            UIFactory.SetAnchors(playBtnObj, new Vector2(0.2f, 0.15f), new Vector2(0.8f, 0.34f));
 
-            // Button label
-            var labelObj = UIFactory.CreateText("Label", btnObj.transform,
-                label, 20, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(labelObj, new Vector2(0.02f, 0), new Vector2(0.98f, 1));
+            playButton = playBtnObj.AddComponent<Button>();
+            var colors = playButton.colors;
+            colors.normalColor = new Color(1f, 0.6f, 0);
+            colors.highlightedColor = new Color(1f, 0.7f, 0.2f);
+            colors.pressedColor = new Color(0.8f, 0.5f, 0);
+            colors.selectedColor = new Color(1f, 0.65f, 0.1f);
+            playButton.colors = colors;
 
-            // Make clickable
-            var btn = btnObj.AddComponent<Button>();
-            var colors = btn.colors;
-            colors.normalColor = new Color(0.1f, 0.1f, 0.1f);
-            colors.highlightedColor = new Color(0.2f, 0.15f, 0.05f);
-            colors.pressedColor = new Color(1f, 0.6f, 0);
-            colors.selectedColor = new Color(0.15f, 0.12f, 0.05f);
-            btn.colors = colors;
+            playButton.onClick.AddListener(OnPlay);
 
-            var capturedMode = mode;
-            btn.onClick.AddListener(() => {
-                lastSelectedMode = capturedMode;
-                GameManager.Instance.StartGame(capturedMode);
-            });
+            // Button label — 3x original (14 -> 42)
+            var playLabel = UIFactory.CreateText("PlayLabel", playBtnObj.transform,
+                "PLAY", 54, new Color(0.05f, 0.05f, 0.05f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            UIFactory.SetAnchors(playLabel, new Vector2(0, 0), new Vector2(1, 1));
 
-            // High score badge on right side of button
-            int highScore = HighScoreManager.GetHighScore(mode);
-            if (highScore > 0)
-            {
-                string grade = HighScoreManager.GetHighGrade(mode);
-                var hsObj = UIFactory.CreateText("HighScore", btnObj.transform,
-                    $"{grade}  {highScore}", 12, new Color(1f, 0.85f, 0.2f, 0.7f),
-                    FontStyles.Bold, TextAlignmentOptions.Right);
-                UIFactory.SetAnchors(hsObj, new Vector2(0.6f, 0), new Vector2(0.96f, 1));
-            }
-
-            // Description below button
-            var descObj = UIFactory.CreateText($"Desc_{label}", parent,
-                desc, 11, new Color(0.5f, 0.5f, 0.5f),
+            // Footer — 3x original (9 -> 27)
+            var footer = UIFactory.CreateText("Footer", menuPanel.transform,
+                "Press ENTER or tap to play", 27, new Color(0.45f, 0.45f, 0.45f),
                 FontStyles.Normal, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(descObj,
-                new Vector2(0.1f, yCenter - descHeight),
-                new Vector2(0.9f, yCenter));
+            UIFactory.SetAnchors(footer, new Vector2(0.1f, 0.04f), new Vector2(0.9f, 0.13f));
         }
 
-        private void CreateVehicleButton(string label, VehicleType type, int index,
-            Transform parent)
+        void Update()
         {
-            float xStart = 0.1f + index * 0.27f;
-            float xEnd = xStart + 0.25f;
+            if (menuPanel == null || !menuPanel.activeSelf) return;
 
-            var btnObj = UIFactory.CreateImage($"Vehicle_{label}", parent,
-                new Color(0.08f, 0.08f, 0.08f));
-            UIFactory.SetAnchors(btnObj, new Vector2(xStart, 0.62f),
-                new Vector2(xEnd, 0.65f));
-
-            vehicleButtonBgs[index] = btnObj.GetComponent<Image>();
-
-            var labelObj = UIFactory.CreateText("Label", btnObj.transform,
-                label, 14, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(labelObj, new Vector2(0, 0), new Vector2(1, 1));
-
-            var btn = btnObj.AddComponent<Button>();
-            var capturedType = type;
-            var capturedIdx = index;
-            btn.onClick.AddListener(() => {
-                selectedVehicle = capturedType;
-                if (GameManager.Instance != null)
-                    GameManager.Instance.state.selectedVehicle = capturedType;
-                UpdateVehicleHighlight();
-            });
-        }
-
-        private void UpdateVehicleHighlight()
-        {
-            Color active = new Color(1f, 0.6f, 0, 0.7f);
-            Color inactive = new Color(0.08f, 0.08f, 0.08f);
-
-            for (int i = 0; i < vehicleButtonBgs.Length; i++)
+            // Keyboard support: Enter or Space to play
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
+                || Input.GetKeyDown(KeyCode.Space))
             {
-                if (vehicleButtonBgs[i] == null) continue;
-                vehicleButtonBgs[i].color = (i == (int)selectedVehicle) ? active : inactive;
-            }
-
-            var configs = VehicleConfig.GetDefaults();
-            int idx = (int)selectedVehicle;
-            if (idx < configs.Length && vehicleLabelText != null)
-                vehicleLabelText.text = configs[idx].description;
-        }
-
-        private void CreateSetButton(string label, SetType type, int index,
-            Transform parent)
-        {
-            float xStart = 0.07f + index * 0.22f;
-            float xEnd = xStart + 0.2f;
-
-            var btnObj = UIFactory.CreateImage($"Set_{label}", parent,
-                new Color(0.08f, 0.08f, 0.08f));
-            UIFactory.SetAnchors(btnObj, new Vector2(xStart, 0.52f),
-                new Vector2(xEnd, 0.545f));
-
-            setButtonBgs[index] = btnObj.GetComponent<Image>();
-
-            var labelObj = UIFactory.CreateText("Label", btnObj.transform,
-                label, 12, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(labelObj, new Vector2(0, 0), new Vector2(1, 1));
-
-            var btn = btnObj.AddComponent<Button>();
-            var capturedType = type;
-            btn.onClick.AddListener(() => {
-                selectedSet = capturedType;
-                if (GameManager.Instance != null)
-                    GameManager.Instance.state.selectedSet = capturedType;
-                UpdateSetHighlight();
-            });
-        }
-
-        private void CreateWeatherButton(string label, WeatherCondition weather, int index,
-            Transform parent)
-        {
-            float xStart = 0.05f + index * 0.185f;
-            float xEnd = xStart + 0.17f;
-
-            var btnObj = UIFactory.CreateImage($"Weather_{label}", parent,
-                new Color(0.08f, 0.08f, 0.08f));
-            UIFactory.SetAnchors(btnObj, new Vector2(xStart, 0.42f),
-                new Vector2(xEnd, 0.445f));
-
-            weatherButtonBgs[index] = btnObj.GetComponent<Image>();
-
-            var labelObj = UIFactory.CreateText("Label", btnObj.transform,
-                label, 10, Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
-            UIFactory.SetAnchors(labelObj, new Vector2(0, 0), new Vector2(1, 1));
-
-            var btn = btnObj.AddComponent<Button>();
-            var capturedWeather = weather;
-            btn.onClick.AddListener(() => {
-                selectedWeather = capturedWeather;
-                if (GameManager.Instance != null)
-                    GameManager.Instance.state.selectedWeather = capturedWeather;
-                UpdateWeatherHighlight();
-            });
-        }
-
-        private void UpdateWeatherHighlight()
-        {
-            Color active = new Color(0.4f, 0.6f, 0.9f, 0.7f);  // blue tint for weather
-            Color inactive = new Color(0.08f, 0.08f, 0.08f);
-
-            for (int i = 0; i < weatherButtonBgs.Length; i++)
-            {
-                if (weatherButtonBgs[i] == null) continue;
-                weatherButtonBgs[i].color = (i == (int)selectedWeather) ? active : inactive;
+                OnPlay();
             }
         }
 
-        private void UpdateSetHighlight()
+        private void OnPlay()
         {
-            Color active = new Color(1f, 0.6f, 0, 0.7f);
-            Color inactive = new Color(0.08f, 0.08f, 0.08f);
-
-            for (int i = 0; i < setButtonBgs.Length; i++)
-            {
-                if (setButtonBgs[i] == null) continue;
-                setButtonBgs[i].color = (i == (int)selectedSet) ? active : inactive;
-            }
-
-            var configs = SetConfig.GetDefaults();
-            int idx = (int)selectedSet;
-            if (idx < configs.Length && setLabelText != null)
-                setLabelText.text = configs[idx].description;
+            Hide();
+            if (GameManager.Instance != null && GameManager.Instance.careerMenu != null)
+                GameManager.Instance.careerMenu.Show();
         }
 
         public void Show()

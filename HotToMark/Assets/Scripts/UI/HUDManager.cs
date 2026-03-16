@@ -8,9 +8,8 @@ using HotToMark.Environment;
 namespace HotToMark.UI
 {
     /// <summary>
-    /// Stages 3-7: HUD overlay showing contextual game info.
-    /// Self-builds its own UI hierarchy at runtime.
-    /// Adapts display based on current phase and game mode.
+    /// HUD overlay showing contextual game info.
+    /// Text sizes 3x for readability.
     /// </summary>
     public class HUDManager : MonoBehaviour
     {
@@ -48,7 +47,7 @@ namespace HotToMark.UI
         private TextMeshProUGUI hurryText;
         private TextMeshProUGUI reverseMaxSpeedText;
 
-        // Obstacles & Multi-mark (F-8, F-10)
+        // Obstacles & Multi-mark
         private TextMeshProUGUI obstacleHitText;
         private TextMeshProUGUI multiMarkText;
 
@@ -65,8 +64,8 @@ namespace HotToMark.UI
             hudPanel = new GameObject("HUDPanel");
             hudPanel.transform.SetParent(transform, false);
             var rect = hudPanel.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0, 0.5f);
-            rect.anchorMax = new Vector2(0.42f, 1);
+            rect.anchorMin = new Vector2(0, 0.4f);
+            rect.anchorMax = new Vector2(0.5f, 1);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
@@ -75,51 +74,52 @@ namespace HotToMark.UI
 
             // Vertical layout
             var vlg = hudPanel.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(12, 12, 8, 8);
-            vlg.spacing = 4;
+            vlg.padding = new RectOffset(16, 16, 12, 12);
+            vlg.spacing = 6;
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
             vlg.childAlignment = TextAnchor.UpperLeft;
 
-            // Mode label (always visible)
-            var modeObj = CreateHUDText("ModeLabel", hudPanel.transform, "", 16,
-                new Color(1f, 0.6f, 0), FontStyles.Bold, 24);
+            // Mode label — 3x (16 -> 48)
+            var modeObj = CreateHUDText("ModeLabel", hudPanel.transform, "", 48,
+                new Color(1f, 0.6f, 0), FontStyles.Bold, 60);
             modeLabelText = modeObj;
 
-            // Take label
-            takeLabelText = CreateHUDText("TakeLabel", hudPanel.transform, "", 12,
-                new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 18);
+            // Take label — 3x (12 -> 36)
+            takeLabelText = CreateHUDText("TakeLabel", hudPanel.transform, "", 36,
+                new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 44);
 
             // ---- PreRoll Group ----
             preRollGroup = CreateGroup("PreRollGroup", hudPanel.transform);
             preRollText = CreateHUDText("PreRollCall", preRollGroup.transform,
-                "", 32, Color.white, FontStyles.Bold, 44);
+                "", 96, Color.white, FontStyles.Bold, 110);
             preRollGroup.SetActive(false);
 
             // ---- Driving Group ----
             drivingGroup = CreateGroup("DrivingGroup", hudPanel.transform);
 
+            // 3x (18 -> 54)
             distToMarkText = CreateHUDText("DistToMark", drivingGroup.transform,
-                "Distance to Mark: --", 18, Color.green, FontStyles.Normal, 26);
+                "Distance to Mark: --", 54, Color.green, FontStyles.Normal, 66);
 
-            // Exact MPH sub-group
+            // Exact MPH sub-group — 3x (14 -> 42)
             exactMPHGroup = CreateGroup("ExactMPHGroup", drivingGroup.transform);
             targetMPHText = CreateHUDText("TargetMPH", exactMPHGroup.transform,
-                "", 14, new Color(1f, 0.8f, 0), FontStyles.Normal, 20);
+                "", 42, new Color(1f, 0.8f, 0), FontStyles.Normal, 52);
             checkpointDistText = CreateHUDText("CheckpointDist", exactMPHGroup.transform,
-                "", 14, new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 20);
+                "", 42, new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 52);
             checkpointResultText = CreateHUDText("CheckpointResult", exactMPHGroup.transform,
-                "", 14, Color.green, FontStyles.Normal, 20);
+                "", 42, Color.green, FontStyles.Normal, 52);
             exactMPHGroup.SetActive(false);
 
-            // Multi-mark progress (F-8)
+            // Multi-mark progress — 3x (13 -> 39)
             multiMarkText = CreateHUDText("MultiMark", drivingGroup.transform,
-                "", 13, new Color(1f, 0.6f, 0), FontStyles.Normal, 18);
+                "", 39, new Color(1f, 0.6f, 0), FontStyles.Normal, 48);
             multiMarkText.gameObject.SetActive(false);
 
-            // Obstacle hit counter (F-10)
+            // Obstacle hit counter — 3x (13 -> 39)
             obstacleHitText = CreateHUDText("ObstacleHits", drivingGroup.transform,
-                "", 13, new Color(1f, 0.4f, 0.4f), FontStyles.Normal, 18);
+                "", 39, new Color(1f, 0.4f, 0.4f), FontStyles.Normal, 48);
             obstacleHitText.gameObject.SetActive(false);
 
             drivingGroup.SetActive(false);
@@ -127,41 +127,48 @@ namespace HotToMark.UI
             // ---- Stopped Group ----
             stoppedGroup = CreateGroup("StoppedGroup", hudPanel.transform);
 
+            // 3x (24 -> 72)
             markAccuracyText = CreateHUDText("MarkAccuracy", stoppedGroup.transform,
-                "ON MARK!", 24, Color.yellow, FontStyles.Bold, 34);
+                "ON MARK!", 72, Color.yellow, FontStyles.Bold, 84);
+            // 3x (14 -> 42)
             honkInstructionText = CreateHUDText("HonkInstruction", stoppedGroup.transform,
-                "Honk horn TWICE", 14, Color.white, FontStyles.Normal, 20);
+                "Honk horn TWICE", 42, Color.white, FontStyles.Normal, 52);
+            // 3x (16 -> 48)
             honkCountText = CreateHUDText("HonkCount", stoppedGroup.transform,
-                "Honks: 0/2", 16, new Color(1f, 0.6f, 0), FontStyles.Bold, 22);
+                "Honks: 0/2", 48, new Color(1f, 0.6f, 0), FontStyles.Bold, 58);
 
             stoppedGroup.SetActive(false);
 
             // ---- Reversing Group ----
             reversingGroup = CreateGroup("ReversingGroup", hudPanel.transform);
 
+            // 3x (18 -> 54)
             distToStartText = CreateHUDText("DistToStart", reversingGroup.transform,
-                "Distance to Start: --", 18, Color.green, FontStyles.Normal, 26);
+                "Distance to Start: --", 54, Color.green, FontStyles.Normal, 66);
+            // 3x (14 -> 42)
             reverseTimeText = CreateHUDText("ReverseTime", reversingGroup.transform,
-                "Time: 0.0s", 14, Color.white, FontStyles.Normal, 20);
+                "Time: 0.0s", 42, Color.white, FontStyles.Normal, 52);
+            // 3x (28 -> 84)
             hurryText = CreateHUDText("Hurry", reversingGroup.transform,
-                "HURRY!", 28, Color.red, FontStyles.Bold, 36);
+                "HURRY!", 84, Color.red, FontStyles.Bold, 96);
             hurryText.gameObject.SetActive(false);
+            // 3x (12 -> 36)
             reverseMaxSpeedText = CreateHUDText("ReverseMaxSpeed", reversingGroup.transform,
-                "", 12, new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 18);
+                "", 36, new Color(0.7f, 0.7f, 0.7f), FontStyles.Normal, 44);
 
             reversingGroup.SetActive(false);
 
-            // Pause button (top-right)
+            // Pause button (top-right) — 3x (18 -> 54)
             var pauseBtn = UIFactory.CreateImage("PauseButton", hudPanel.transform,
                 new Color(0.2f, 0.2f, 0.2f, 0.5f));
             var pauseRect = pauseBtn.GetComponent<RectTransform>();
             pauseRect.anchorMin = new Vector2(1, 1);
             pauseRect.anchorMax = new Vector2(1, 1);
             pauseRect.pivot = new Vector2(1, 1);
-            pauseRect.sizeDelta = new Vector2(50, 40);
+            pauseRect.sizeDelta = new Vector2(80, 60);
 
             var pauseLabel = UIFactory.CreateText("PauseLabel", pauseBtn.transform,
-                "||", 18, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+                "||", 54, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             UIFactory.SetAnchors(pauseLabel, new Vector2(0, 0), new Vector2(1, 1));
 
             var btn = pauseBtn.AddComponent<Button>();
@@ -250,18 +257,18 @@ namespace HotToMark.UI
             if (elapsed < 1.2f)
             {
                 preRollText.text = "ROLLING!";
-                preRollText.color = new Color(1f, 0.3f, 0.3f); // red
+                preRollText.color = new Color(1f, 0.3f, 0.3f);
             }
             else if (elapsed < 2.2f)
             {
                 preRollText.text = "SPEED!";
-                preRollText.color = new Color(1f, 0.8f, 0.2f); // amber
+                preRollText.color = new Color(1f, 0.8f, 0.2f);
             }
             else
             {
                 preRollText.text = "ACTION!";
                 preRollText.color = Color.green;
-                preRollStartTime = 0; // reset for next take
+                preRollStartTime = 0;
             }
         }
 
@@ -309,7 +316,7 @@ namespace HotToMark.UI
                 }
             }
 
-            // Multi-mark progress (F-8)
+            // Multi-mark progress
             var mm = GameManager.Instance?.multiMarkSystem;
             if (mm != null && mm.marks.Count > 1)
             {
@@ -321,7 +328,7 @@ namespace HotToMark.UI
                 multiMarkText.gameObject.SetActive(false);
             }
 
-            // Obstacle hit counter (F-10)
+            // Obstacle hit counter
             var obs = GameManager.Instance?.obstacleSystem;
             if (obs != null && obs.totalObstacles > 0)
             {
