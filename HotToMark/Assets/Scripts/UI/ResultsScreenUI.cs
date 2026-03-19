@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using HotToMark.Core;
 using HotToMark.Scoring;
@@ -173,12 +174,15 @@ namespace HotToMark.UI
             if (resultsPanel == null || !resultsPanel.activeSelf) return;
 
             // Keyboard: Enter/Space to play again, Escape to go back to menu
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
-                || Input.GetKeyDown(KeyCode.Space))
+            var kb = Keyboard.current;
+            if (kb == null) return;
+
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame
+                || kb.spaceKey.wasPressedThisFrame)
             {
                 OnPlayAgain();
             }
-            else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace))
+            else if (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame)
             {
                 OnBackToMenu();
             }

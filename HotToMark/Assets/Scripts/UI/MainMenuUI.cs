@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using HotToMark.Core;
 
@@ -81,8 +82,10 @@ namespace HotToMark.UI
             if (menuPanel == null || !menuPanel.activeSelf) return;
 
             // Keyboard support: Enter or Space to play
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
-                || Input.GetKeyDown(KeyCode.Space))
+            var kb = Keyboard.current;
+            if (kb != null && (kb.enterKey.wasPressedThisFrame
+                || kb.numpadEnterKey.wasPressedThisFrame
+                || kb.spaceKey.wasPressedThisFrame))
             {
                 OnPlay();
             }

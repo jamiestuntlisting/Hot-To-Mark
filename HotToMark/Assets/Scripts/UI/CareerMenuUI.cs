@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using HotToMark.Core;
 using HotToMark.Scoring;
@@ -112,18 +113,21 @@ namespace HotToMark.UI
             if (careerPanel == null || !careerPanel.activeSelf) return;
             if (sceneCount == 0) return;
 
-            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            var kb = Keyboard.current;
+            if (kb == null) return;
+
+            if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame)
             {
                 selectedIndex = Mathf.Max(0, selectedIndex - 1);
                 UpdateSelectionHighlight();
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            else if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame)
             {
                 selectedIndex = Mathf.Min(sceneCount - 1, selectedIndex + 1);
                 UpdateSelectionHighlight();
             }
-            else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
-                     || Input.GetKeyDown(KeyCode.Space))
+            else if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame
+                     || kb.spaceKey.wasPressedThisFrame)
             {
                 var career = CareerManager.Instance;
                 if (career != null && selectedIndex < career.scenes.Length
@@ -133,7 +137,7 @@ namespace HotToMark.UI
                     career.StartScene(selectedIndex);
                 }
             }
-            else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace))
+            else if (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame)
             {
                 Hide();
                 if (GameManager.Instance != null)
