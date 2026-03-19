@@ -38,6 +38,9 @@ namespace HotToMark.Core
             BuildSideWindows();
             BuildWindshield();
             BuildVents();
+            BuildRearInterior();
+            BuildRoof();
+            BuildDoorPanels();
         }
 
         private void BuildDashboard()
@@ -217,6 +220,158 @@ namespace HotToMark.Core
                 new Vector3(0, 0.6f, 0.72f),
                 new Vector3(0.12f, 0.04f, 0.03f),
                 null, ventColor);
+        }
+
+        private void BuildRearInterior()
+        {
+            // B-pillars (behind driver, connecting roof to body)
+            CreatePart("LeftBPillar", PrimitiveType.Cube,
+                new Vector3(-1.0f, 0.9f, -0.4f),
+                new Vector3(0.06f, 1.0f, 0.06f),
+                pillarMaterial, pillarColor);
+
+            CreatePart("RightBPillar", PrimitiveType.Cube,
+                new Vector3(1.0f, 0.9f, -0.4f),
+                new Vector3(0.06f, 1.0f, 0.06f),
+                pillarMaterial, pillarColor);
+
+            // Driver headrest
+            CreatePart("DriverHeadrest", PrimitiveType.Cube,
+                new Vector3(0, 1.15f, -0.1f),
+                new Vector3(0.22f, 0.22f, 0.08f),
+                seatMaterial, dashColor * 1.5f);
+
+            // Driver seat back (visible when looking back)
+            CreatePart("DriverSeatBack", PrimitiveType.Cube,
+                new Vector3(0, 0.75f, -0.1f),
+                new Vector3(0.45f, 0.6f, 0.1f),
+                seatMaterial, dashColor * 1.3f);
+
+            // Rear seat bench
+            CreatePart("RearSeatBottom", PrimitiveType.Cube,
+                new Vector3(0, 0.35f, -0.7f),
+                new Vector3(1.6f, 0.2f, 0.5f),
+                seatMaterial, dashColor * 1.3f);
+
+            CreatePart("RearSeatBack", PrimitiveType.Cube,
+                new Vector3(0, 0.75f, -1.0f),
+                new Vector3(1.6f, 0.6f, 0.12f),
+                seatMaterial, dashColor * 1.3f);
+
+            // Rear headrests (3 across)
+            for (int i = -1; i <= 1; i++)
+            {
+                CreatePart($"RearHeadrest_{i}", PrimitiveType.Cube,
+                    new Vector3(i * 0.5f, 1.1f, -1.0f),
+                    new Vector3(0.18f, 0.18f, 0.08f),
+                    seatMaterial, dashColor * 1.5f);
+            }
+
+            // Rear shelf / package tray
+            CreatePart("RearShelf", PrimitiveType.Cube,
+                new Vector3(0, 1.0f, -1.2f),
+                new Vector3(1.8f, 0.04f, 0.35f),
+                dashboardMaterial, dashColor);
+
+            // Rear window
+            var rearWindow = CreatePart("RearWindow", PrimitiveType.Quad,
+                new Vector3(0, 1.1f, -1.4f),
+                new Vector3(1.5f, 0.5f, 1),
+                windshieldMaterial, new Color(0.5f, 0.7f, 0.85f, 0.1f));
+            rearWindow.transform.localRotation = Quaternion.Euler(-15, 180, 0);
+            MakeTransparent(rearWindow);
+
+            // Rear window frame
+            CreatePart("RearWindowFrame", PrimitiveType.Cube,
+                new Vector3(0, 1.35f, -1.35f),
+                new Vector3(1.7f, 0.04f, 0.1f),
+                pillarMaterial, pillarColor);
+
+            // C-pillars (rear of car)
+            CreatePart("LeftCPillar", PrimitiveType.Cube,
+                new Vector3(-0.9f, 1.1f, -1.2f),
+                new Vector3(0.08f, 0.5f, 0.3f),
+                pillarMaterial, pillarColor);
+
+            CreatePart("RightCPillar", PrimitiveType.Cube,
+                new Vector3(0.9f, 1.1f, -1.2f),
+                new Vector3(0.08f, 0.5f, 0.3f),
+                pillarMaterial, pillarColor);
+
+            // Rear side windows (small quarter windows)
+            var leftRearGlass = CreatePart("LeftRearWindow", PrimitiveType.Quad,
+                new Vector3(-1.03f, 0.9f, -0.4f),
+                new Vector3(0.45f, 0.35f, 1),
+                windshieldMaterial, glassColor);
+            leftRearGlass.transform.localRotation = Quaternion.Euler(0, 90, 0);
+            MakeTransparent(leftRearGlass);
+
+            var rightRearGlass = CreatePart("RightRearWindow", PrimitiveType.Quad,
+                new Vector3(1.03f, 0.9f, -0.4f),
+                new Vector3(0.45f, 0.35f, 1),
+                windshieldMaterial, glassColor);
+            rightRearGlass.transform.localRotation = Quaternion.Euler(0, -90, 0);
+            MakeTransparent(rightRearGlass);
+        }
+
+        private void BuildRoof()
+        {
+            // Roof (overhead)
+            CreatePart("Roof", PrimitiveType.Cube,
+                new Vector3(0, 1.4f, -0.2f),
+                new Vector3(2.0f, 0.04f, 2.0f),
+                pillarMaterial, pillarColor);
+
+            // Headliner (slightly lower, lighter color)
+            CreatePart("Headliner", PrimitiveType.Cube,
+                new Vector3(0, 1.37f, -0.2f),
+                new Vector3(1.85f, 0.02f, 1.85f),
+                null, new Color(0.25f, 0.25f, 0.25f));
+
+            // Sun visor (driver)
+            CreatePart("SunVisor", PrimitiveType.Cube,
+                new Vector3(-0.2f, 1.32f, 0.55f),
+                new Vector3(0.3f, 0.01f, 0.18f),
+                null, new Color(0.22f, 0.22f, 0.22f));
+        }
+
+        private void BuildDoorPanels()
+        {
+            // Left door panel
+            CreatePart("LeftDoorPanel", PrimitiveType.Cube,
+                new Vector3(-1.05f, 0.55f, 0.1f),
+                new Vector3(0.04f, 0.55f, 1.0f),
+                pillarMaterial, dashColor * 0.9f);
+
+            // Left armrest
+            CreatePart("LeftArmrest", PrimitiveType.Cube,
+                new Vector3(-0.95f, 0.65f, 0.1f),
+                new Vector3(0.12f, 0.06f, 0.35f),
+                null, dashColor * 1.2f);
+
+            // Right door panel
+            CreatePart("RightDoorPanel", PrimitiveType.Cube,
+                new Vector3(1.05f, 0.55f, 0.1f),
+                new Vector3(0.04f, 0.55f, 1.0f),
+                pillarMaterial, dashColor * 0.9f);
+
+            // Right armrest
+            CreatePart("RightArmrest", PrimitiveType.Cube,
+                new Vector3(0.95f, 0.65f, 0.1f),
+                new Vector3(0.12f, 0.06f, 0.35f),
+                null, dashColor * 1.2f);
+
+            // Center console (between seats)
+            CreatePart("CenterConsole", PrimitiveType.Cube,
+                new Vector3(0, 0.45f, 0.0f),
+                new Vector3(0.25f, 0.25f, 0.6f),
+                dashboardMaterial, dashColor);
+
+            // Gear shifter
+            CreatePart("GearShifter", PrimitiveType.Capsule,
+                new Vector3(0, 0.62f, 0.1f),
+                new Vector3(0.03f, 0.06f, 0.03f),
+                null, chromeColor);
         }
 
         // ---- Helpers ----

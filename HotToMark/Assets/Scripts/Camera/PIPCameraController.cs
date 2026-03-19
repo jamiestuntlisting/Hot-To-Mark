@@ -17,9 +17,9 @@ namespace HotToMark.Camera
         [SerializeField] private Vector3 cameraPosition = new Vector3(0, 2.5f, 28f);
         [SerializeField] private float fieldOfView = 40f;
 
-        [Header("Render Texture")]
-        [SerializeField] private int renderWidth = 420;
-        [SerializeField] private int renderHeight = 280;
+        [Header("Render Texture (4:3)")]
+        [SerializeField] private int renderWidth = 400;
+        [SerializeField] private int renderHeight = 300;
 
         [Header("REC Blink")]
         [SerializeField] private float blinkInterval = 0.5f;

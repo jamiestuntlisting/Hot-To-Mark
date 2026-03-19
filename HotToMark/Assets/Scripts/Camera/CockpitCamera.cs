@@ -16,9 +16,8 @@ namespace HotToMark.Camera
         [SerializeField] private Vector3 eyeOffset = new Vector3(0, 1.15f, 0.2f);
 
         [Header("Motion")]
-        [SerializeField] private float lookAheadSmoothing = 4f;
-        [SerializeField] private float lateralShiftAmount = 0.3f;
-        [SerializeField] private float speedBobAmount = 0.003f;
+        [SerializeField] private float lateralShiftAmount = 0.15f;
+        [SerializeField] private float speedBobAmount = 0.002f;
         [SerializeField] private float speedBobFrequency = 3f;
 
         [Header("Interior Bounds (keep driver inside car)")]
@@ -53,11 +52,11 @@ namespace HotToMark.Camera
                 return;
             }
 
-            // Follow car position
+            // Rigidly follow car position — camera is inside the car
             Vector3 carWorldPos = CarController.FeetToWorldPosition(state.posY, state.posX);
             Vector3 targetPos = carWorldPos + eyeOffset;
 
-            // Lateral offset from steering
+            // Subtle lateral shift from steering
             targetPos.x += state.steering * lateralShiftAmount;
 
             // Speed bob (road vibration feel)
@@ -68,21 +67,14 @@ namespace HotToMark.Camera
                 targetPos.y += Mathf.Sin(bobTimer) * speedBobAmount * absSpeed;
             }
 
-            // Clamp offset from car center so driver stays inside the car
-            Vector3 offsetFromCar = targetPos - (carWorldPos + eyeOffset);
-            offsetFromCar.x = Mathf.Clamp(offsetFromCar.x, -maxLateralOffset, maxLateralOffset);
-            offsetFromCar.y = Mathf.Clamp(offsetFromCar.y, -maxVerticalOffset, maxVerticalOffset);
-            offsetFromCar.z = Mathf.Clamp(offsetFromCar.z, -maxForwardOffset, maxForwardOffset);
-            targetPos = carWorldPos + eyeOffset + offsetFromCar;
+            // Lock camera directly to car — no lerp delay
+            transform.position = targetPos;
 
-            transform.position = Vector3.Lerp(transform.position, targetPos,
-                Time.deltaTime * lookAheadSmoothing);
-
-            // Look forward (or backward when reversing), clamped to stay inside windshield view
+            // Look forward (or backward when reversing)
             Vector3 lookDir = state.gear == Gear.Reverse ? Vector3.back : Vector3.forward;
             lookDir.x += Mathf.Clamp(state.steering * 0.1f, -0.15f, 0.15f);
-            transform.rotation = Quaternion.Lerp(transform.rotation,
-                Quaternion.LookRotation(lookDir), Time.deltaTime * 6f);
+            transform.rotation = Quaternion.Slerp(transform.rotation,
+                Quaternion.LookRotation(lookDir), Time.deltaTime * 8f);
 
             // Dynamic FOV based on speed
             float fovTarget = baseFOV + (absSpeed / GameState.MAX_FORWARD_MPH) * maxFOVIncrease;

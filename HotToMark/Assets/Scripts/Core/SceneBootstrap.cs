@@ -199,7 +199,7 @@ namespace HotToMark.Core
             var touchObj = new GameObject("TouchControls");
             touchObj.transform.SetParent(uiRoot.transform, false);
             touchObj.AddComponent<RectTransform>().SetFullStretch();
-            touchObj.AddComponent<TouchControlsUI>();
+            var touchControls = touchObj.AddComponent<TouchControlsUI>();
 
             // ---- PIP Display (overlay on UI canvas) ----
             BuildPIPDisplay(uiRoot.transform, pipController);
@@ -264,6 +264,7 @@ namespace HotToMark.Core
             gm.obstacleSystem = obstacleSystem;
             gm.replaySystem = replaySystem;
             gm.careerMenu = careerMenu;
+            gm.touchControls = touchControls;
 
             // ---- Game Center (F-4) ----
             var gcObj = new GameObject("GameCenter");
@@ -314,14 +315,19 @@ namespace HotToMark.Core
 
         private void BuildPIPDisplay(Transform uiParent, PIPCameraController pipController)
         {
-            // PIP container — upper-right corner
+            // PIP container — upper-right corner, 4:3 aspect ratio
             var pipPanel = new GameObject("PIPPanel");
             pipPanel.transform.SetParent(uiParent, false);
             var pipRect = pipPanel.AddComponent<RectTransform>();
-            pipRect.anchorMin = new Vector2(0.62f, 0.72f);
+            pipRect.anchorMin = new Vector2(0.65f, 0.68f);
             pipRect.anchorMax = new Vector2(0.98f, 0.98f);
             pipRect.offsetMin = Vector2.zero;
             pipRect.offsetMax = Vector2.zero;
+
+            // Force 4:3 aspect ratio on the panel
+            var aspectFitter = pipPanel.AddComponent<AspectRatioFitter>();
+            aspectFitter.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
+            aspectFitter.aspectRatio = 4f / 3f;
 
             // Black border
             var border = pipPanel.AddComponent<Image>();
@@ -343,18 +349,18 @@ namespace HotToMark.Core
             UIFactory.SetAnchors(recObj, new Vector2(0.04f, 0.88f), new Vector2(0.08f, 0.96f));
 
             var recLabel = UIFactory.CreateText("RECLabel", pipPanel.transform,
-                "REC", 8, Color.red, TMPro.FontStyles.Bold, TMPro.TextAlignmentOptions.Left);
+                "REC", 24, Color.red, TMPro.FontStyles.Bold, TMPro.TextAlignmentOptions.Left);
             UIFactory.SetAnchors(recLabel, new Vector2(0.1f, 0.86f), new Vector2(0.3f, 0.98f));
 
             // Camera label
             var camLabel = UIFactory.CreateText("CamLabel", pipPanel.transform,
-                "CAM A - WIDE", 7, new Color(0.8f, 0.8f, 0.8f),
+                "CAM A", 21, new Color(0.8f, 0.8f, 0.8f),
                 TMPro.FontStyles.Normal, TMPro.TextAlignmentOptions.Right);
             UIFactory.SetAnchors(camLabel, new Vector2(0.5f, 0.86f), new Vector2(0.96f, 0.98f));
 
             // Timecode at bottom
             var timecodeObj = UIFactory.CreateText("Timecode", pipPanel.transform,
-                "00:00:00", 7, new Color(0.9f, 0.9f, 0.9f),
+                "00:00:00", 21, new Color(0.9f, 0.9f, 0.9f),
                 TMPro.FontStyles.Normal, TMPro.TextAlignmentOptions.Center);
             UIFactory.SetAnchors(timecodeObj, new Vector2(0.2f, 0), new Vector2(0.8f, 0.06f));
         }
