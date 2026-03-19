@@ -161,30 +161,30 @@ namespace HotToMark.Core
 
         private void BuildSideWindows()
         {
-            // Left window frame
-            var leftFrame = CreatePart("LeftWindowFrame", PrimitiveType.Cube,
-                new Vector3(-1.05f, 0.9f, 0.4f),
-                new Vector3(0.02f, 0.7f, 0.5f),
+            // Left window frame (sill — bottom edge of window)
+            var leftSill = CreatePart("LeftWindowSill", PrimitiveType.Cube,
+                new Vector3(-0.98f, 0.88f, 0.15f),
+                new Vector3(0.06f, 0.03f, 0.8f),
                 pillarMaterial, pillarColor);
 
-            // Left glass
+            // Left glass — positioned between door panel top and roof
             var leftGlass = CreatePart("LeftWindowGlass", PrimitiveType.Quad,
-                new Vector3(-1.03f, 0.9f, 0.4f),
-                new Vector3(0.65f, 0.45f, 1),
+                new Vector3(-0.96f, 1.08f, 0.15f),
+                new Vector3(0.75f, 0.4f, 1),
                 windshieldMaterial, glassColor);
             leftGlass.transform.localRotation = Quaternion.Euler(0, 90, 0);
             MakeTransparent(leftGlass);
 
-            // Right window frame
-            var rightFrame = CreatePart("RightWindowFrame", PrimitiveType.Cube,
-                new Vector3(1.05f, 0.9f, 0.4f),
-                new Vector3(0.02f, 0.7f, 0.5f),
+            // Right window frame (sill)
+            var rightSill = CreatePart("RightWindowSill", PrimitiveType.Cube,
+                new Vector3(0.98f, 0.88f, 0.15f),
+                new Vector3(0.06f, 0.03f, 0.8f),
                 pillarMaterial, pillarColor);
 
             // Right glass
             var rightGlass = CreatePart("RightWindowGlass", PrimitiveType.Quad,
-                new Vector3(1.03f, 0.9f, 0.4f),
-                new Vector3(0.65f, 0.45f, 1),
+                new Vector3(0.96f, 1.08f, 0.15f),
+                new Vector3(0.75f, 0.4f, 1),
                 windshieldMaterial, glassColor);
             rightGlass.transform.localRotation = Quaternion.Euler(0, -90, 0);
             MakeTransparent(rightGlass);
@@ -227,88 +227,91 @@ namespace HotToMark.Core
             // B-pillars (behind driver, connecting roof to body)
             CreatePart("LeftBPillar", PrimitiveType.Cube,
                 new Vector3(-1.0f, 0.9f, -0.4f),
-                new Vector3(0.06f, 1.0f, 0.06f),
+                new Vector3(0.08f, 1.0f, 0.08f),
                 pillarMaterial, pillarColor);
 
             CreatePart("RightBPillar", PrimitiveType.Cube,
                 new Vector3(1.0f, 0.9f, -0.4f),
-                new Vector3(0.06f, 1.0f, 0.06f),
+                new Vector3(0.08f, 1.0f, 0.08f),
                 pillarMaterial, pillarColor);
 
-            // Driver headrest
+            // Driver headrest — small, sits at top of seat back, doesn't block much
             CreatePart("DriverHeadrest", PrimitiveType.Cube,
-                new Vector3(0, 1.15f, -0.1f),
-                new Vector3(0.22f, 0.22f, 0.08f),
+                new Vector3(0, 1.08f, -0.1f),
+                new Vector3(0.18f, 0.14f, 0.06f),
                 seatMaterial, dashColor * 1.5f);
 
-            // Driver seat back (visible when looking back)
+            // Driver seat back — narrow so you can see around it
             CreatePart("DriverSeatBack", PrimitiveType.Cube,
-                new Vector3(0, 0.75f, -0.1f),
-                new Vector3(0.45f, 0.6f, 0.1f),
+                new Vector3(0, 0.72f, -0.1f),
+                new Vector3(0.38f, 0.5f, 0.08f),
                 seatMaterial, dashColor * 1.3f);
 
-            // Rear seat bench
+            // Rear seat bench — low, below sightline
             CreatePart("RearSeatBottom", PrimitiveType.Cube,
-                new Vector3(0, 0.35f, -0.7f),
-                new Vector3(1.6f, 0.2f, 0.5f),
+                new Vector3(0, 0.3f, -0.7f),
+                new Vector3(1.4f, 0.15f, 0.4f),
                 seatMaterial, dashColor * 1.3f);
 
+            // Rear seat back — shorter, stops well below rear window
             CreatePart("RearSeatBack", PrimitiveType.Cube,
-                new Vector3(0, 0.75f, -1.0f),
-                new Vector3(1.6f, 0.6f, 0.12f),
+                new Vector3(0, 0.6f, -0.95f),
+                new Vector3(1.4f, 0.4f, 0.1f),
                 seatMaterial, dashColor * 1.3f);
 
-            // Rear headrests (3 across)
-            for (int i = -1; i <= 1; i++)
-            {
-                CreatePart($"RearHeadrest_{i}", PrimitiveType.Cube,
-                    new Vector3(i * 0.5f, 1.1f, -1.0f),
-                    new Vector3(0.18f, 0.18f, 0.08f),
-                    seatMaterial, dashColor * 1.5f);
-            }
+            // Rear headrests — small, with gaps between them for visibility
+            CreatePart("RearHeadrest_L", PrimitiveType.Cube,
+                new Vector3(-0.45f, 0.88f, -0.95f),
+                new Vector3(0.14f, 0.12f, 0.06f),
+                seatMaterial, dashColor * 1.5f);
 
-            // Rear shelf / package tray
+            CreatePart("RearHeadrest_R", PrimitiveType.Cube,
+                new Vector3(0.45f, 0.88f, -0.95f),
+                new Vector3(0.14f, 0.12f, 0.06f),
+                seatMaterial, dashColor * 1.5f);
+
+            // Rear shelf / package tray — thin strip below rear window
             CreatePart("RearShelf", PrimitiveType.Cube,
-                new Vector3(0, 1.0f, -1.2f),
-                new Vector3(1.8f, 0.04f, 0.35f),
+                new Vector3(0, 0.88f, -1.15f),
+                new Vector3(1.6f, 0.03f, 0.25f),
                 dashboardMaterial, dashColor);
 
-            // Rear window
+            // Rear window — large, so you can see through it when looking back
             var rearWindow = CreatePart("RearWindow", PrimitiveType.Quad,
-                new Vector3(0, 1.1f, -1.4f),
-                new Vector3(1.5f, 0.5f, 1),
-                windshieldMaterial, new Color(0.5f, 0.7f, 0.85f, 0.1f));
-            rearWindow.transform.localRotation = Quaternion.Euler(-15, 180, 0);
+                new Vector3(0, 1.1f, -1.35f),
+                new Vector3(1.4f, 0.45f, 1),
+                windshieldMaterial, new Color(0.5f, 0.7f, 0.85f, 0.08f));
+            rearWindow.transform.localRotation = Quaternion.Euler(-10, 180, 0);
             MakeTransparent(rearWindow);
 
-            // Rear window frame
+            // Rear window frame — thin bar at top
             CreatePart("RearWindowFrame", PrimitiveType.Cube,
-                new Vector3(0, 1.35f, -1.35f),
-                new Vector3(1.7f, 0.04f, 0.1f),
+                new Vector3(0, 1.32f, -1.3f),
+                new Vector3(1.5f, 0.03f, 0.06f),
                 pillarMaterial, pillarColor);
 
-            // C-pillars (rear of car)
+            // C-pillars (rear corners of car)
             CreatePart("LeftCPillar", PrimitiveType.Cube,
-                new Vector3(-0.9f, 1.1f, -1.2f),
-                new Vector3(0.08f, 0.5f, 0.3f),
+                new Vector3(-0.8f, 1.1f, -1.15f),
+                new Vector3(0.08f, 0.45f, 0.25f),
                 pillarMaterial, pillarColor);
 
             CreatePart("RightCPillar", PrimitiveType.Cube,
-                new Vector3(0.9f, 1.1f, -1.2f),
-                new Vector3(0.08f, 0.5f, 0.3f),
+                new Vector3(0.8f, 1.1f, -1.15f),
+                new Vector3(0.08f, 0.45f, 0.25f),
                 pillarMaterial, pillarColor);
 
-            // Rear side windows (small quarter windows)
+            // Rear side windows (small quarter windows between B and C pillars)
             var leftRearGlass = CreatePart("LeftRearWindow", PrimitiveType.Quad,
-                new Vector3(-1.03f, 0.9f, -0.4f),
-                new Vector3(0.45f, 0.35f, 1),
+                new Vector3(-0.98f, 1.0f, -0.8f),
+                new Vector3(0.6f, 0.3f, 1),
                 windshieldMaterial, glassColor);
             leftRearGlass.transform.localRotation = Quaternion.Euler(0, 90, 0);
             MakeTransparent(leftRearGlass);
 
             var rightRearGlass = CreatePart("RightRearWindow", PrimitiveType.Quad,
-                new Vector3(1.03f, 0.9f, -0.4f),
-                new Vector3(0.45f, 0.35f, 1),
+                new Vector3(0.98f, 1.0f, -0.8f),
+                new Vector3(0.6f, 0.3f, 1),
                 windshieldMaterial, glassColor);
             rightRearGlass.transform.localRotation = Quaternion.Euler(0, -90, 0);
             MakeTransparent(rightRearGlass);
@@ -337,41 +340,71 @@ namespace HotToMark.Core
 
         private void BuildDoorPanels()
         {
-            // Left door panel
-            CreatePart("LeftDoorPanel", PrimitiveType.Cube,
-                new Vector3(-1.05f, 0.55f, 0.1f),
-                new Vector3(0.04f, 0.55f, 1.0f),
+            // Left side wall — solid panel from dashboard to rear, below window line
+            // Lower door panel (thick, visible wall)
+            CreatePart("LeftDoorPanelLower", PrimitiveType.Cube,
+                new Vector3(-0.98f, 0.45f, 0.0f),
+                new Vector3(0.08f, 0.6f, 1.6f),
                 pillarMaterial, dashColor * 0.9f);
+
+            // Left upper door panel (above armrest, thinner)
+            CreatePart("LeftDoorPanelUpper", PrimitiveType.Cube,
+                new Vector3(-0.98f, 0.82f, 0.0f),
+                new Vector3(0.06f, 0.14f, 1.6f),
+                pillarMaterial, dashColor * 0.7f);
 
             // Left armrest
             CreatePart("LeftArmrest", PrimitiveType.Cube,
-                new Vector3(-0.95f, 0.65f, 0.1f),
-                new Vector3(0.12f, 0.06f, 0.35f),
-                null, dashColor * 1.2f);
+                new Vector3(-0.9f, 0.68f, 0.05f),
+                new Vector3(0.14f, 0.06f, 0.4f),
+                null, dashColor * 1.3f);
 
-            // Right door panel
-            CreatePart("RightDoorPanel", PrimitiveType.Cube,
-                new Vector3(1.05f, 0.55f, 0.1f),
-                new Vector3(0.04f, 0.55f, 1.0f),
+            // Left door handle
+            CreatePart("LeftDoorHandle", PrimitiveType.Cube,
+                new Vector3(-0.9f, 0.72f, 0.15f),
+                new Vector3(0.04f, 0.03f, 0.12f),
+                null, chromeColor);
+
+            // Right side wall — mirror of left
+            CreatePart("RightDoorPanelLower", PrimitiveType.Cube,
+                new Vector3(0.98f, 0.45f, 0.0f),
+                new Vector3(0.08f, 0.6f, 1.6f),
                 pillarMaterial, dashColor * 0.9f);
+
+            CreatePart("RightDoorPanelUpper", PrimitiveType.Cube,
+                new Vector3(0.98f, 0.82f, 0.0f),
+                new Vector3(0.06f, 0.14f, 1.6f),
+                pillarMaterial, dashColor * 0.7f);
 
             // Right armrest
             CreatePart("RightArmrest", PrimitiveType.Cube,
-                new Vector3(0.95f, 0.65f, 0.1f),
-                new Vector3(0.12f, 0.06f, 0.35f),
-                null, dashColor * 1.2f);
+                new Vector3(0.9f, 0.68f, 0.05f),
+                new Vector3(0.14f, 0.06f, 0.4f),
+                null, dashColor * 1.3f);
 
-            // Center console (between seats)
+            // Right door handle
+            CreatePart("RightDoorHandle", PrimitiveType.Cube,
+                new Vector3(0.9f, 0.72f, 0.15f),
+                new Vector3(0.04f, 0.03f, 0.12f),
+                null, chromeColor);
+
+            // Center console (between front seats)
             CreatePart("CenterConsole", PrimitiveType.Cube,
                 new Vector3(0, 0.45f, 0.0f),
-                new Vector3(0.25f, 0.25f, 0.6f),
+                new Vector3(0.22f, 0.22f, 0.5f),
                 dashboardMaterial, dashColor);
 
             // Gear shifter
             CreatePart("GearShifter", PrimitiveType.Capsule,
-                new Vector3(0, 0.62f, 0.1f),
+                new Vector3(0, 0.6f, 0.1f),
                 new Vector3(0.03f, 0.06f, 0.03f),
                 null, chromeColor);
+
+            // Floor (visible when looking down/back)
+            CreatePart("Floor", PrimitiveType.Cube,
+                new Vector3(0, 0.12f, -0.2f),
+                new Vector3(1.9f, 0.02f, 2.2f),
+                null, new Color(0.08f, 0.08f, 0.08f));
         }
 
         // ---- Helpers ----

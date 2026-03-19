@@ -200,9 +200,12 @@ namespace HotToMark.Core
             touchObj.transform.SetParent(uiRoot.transform, false);
             touchObj.AddComponent<RectTransform>().SetFullStretch();
             var touchControls = touchObj.AddComponent<TouchControlsUI>();
+            touchObj.SetActive(false); // starts hidden, shown during gameplay
 
             // ---- PIP Display (overlay on UI canvas) ----
-            BuildPIPDisplay(uiRoot.transform, pipController);
+            var pipPanel = BuildPIPDisplay(uiRoot.transform, pipController);
+            // Start hidden — will be shown when game starts
+            pipPanel.SetActive(false);
 
             // ---- Career Menu (F-3) ----
             var careerMenuObj = new GameObject("CareerMenu");
@@ -313,7 +316,7 @@ namespace HotToMark.Core
             return canvasObj;
         }
 
-        private void BuildPIPDisplay(Transform uiParent, PIPCameraController pipController)
+        private GameObject BuildPIPDisplay(Transform uiParent, PIPCameraController pipController)
         {
             // PIP container — upper-right corner, 4:3 aspect ratio
             var pipPanel = new GameObject("PIPPanel");
@@ -363,6 +366,8 @@ namespace HotToMark.Core
                 "00:00:00", 21, new Color(0.9f, 0.9f, 0.9f),
                 TMPro.FontStyles.Normal, TMPro.TextAlignmentOptions.Center);
             UIFactory.SetAnchors(timecodeObj, new Vector2(0.2f, 0), new Vector2(0.8f, 0.06f));
+
+            return pipPanel;
         }
 
         private void SetupSkybox()
