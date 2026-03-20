@@ -51,6 +51,11 @@ namespace HotToMark.UI
         private TextMeshProUGUI obstacleHitText;
         private TextMeshProUGUI multiMarkText;
 
+        // Speedometer
+        private TextMeshProUGUI speedValueText;
+        private TextMeshProUGUI speedUnitText;
+        private TextMeshProUGUI gearIndicatorText;
+
         private GameState state;
 
         void Awake()
@@ -176,6 +181,57 @@ namespace HotToMark.UI
             {
                 if (GameManager.Instance != null) GameManager.Instance.PauseGame();
             });
+
+            // ---- Speedometer (bottom-center) ----
+            BuildSpeedometer();
+        }
+
+        private void BuildSpeedometer()
+        {
+            // Container — bottom center of screen
+            var speedPanel = new GameObject("SpeedometerPanel");
+            speedPanel.transform.SetParent(transform, false);
+            var speedRect = speedPanel.AddComponent<RectTransform>();
+            speedRect.anchorMin = new Vector2(0.35f, 0.02f);
+            speedRect.anchorMax = new Vector2(0.65f, 0.18f);
+            speedRect.offsetMin = Vector2.zero;
+            speedRect.offsetMax = Vector2.zero;
+
+            var speedBg = speedPanel.AddComponent<Image>();
+            speedBg.color = new Color(0, 0, 0, 0.5f);
+
+            // Gear indicator (D/R) — left side
+            var gearObj = UIFactory.CreateText("GearIndicator", speedPanel.transform,
+                "D", 48, new Color(0.2f, 0.9f, 0.2f),
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            var gearRect = gearObj.GetComponent<RectTransform>();
+            gearRect.anchorMin = new Vector2(0, 0);
+            gearRect.anchorMax = new Vector2(0.18f, 1);
+            gearRect.offsetMin = Vector2.zero;
+            gearRect.offsetMax = Vector2.zero;
+            gearIndicatorText = gearObj.GetComponent<TextMeshProUGUI>();
+
+            // Speed value — big number in center
+            var speedValObj = UIFactory.CreateText("SpeedValue", speedPanel.transform,
+                "0", 80, Color.white,
+                FontStyles.Bold, TextAlignmentOptions.Center);
+            var speedValRect = speedValObj.GetComponent<RectTransform>();
+            speedValRect.anchorMin = new Vector2(0.18f, 0.15f);
+            speedValRect.anchorMax = new Vector2(0.82f, 1);
+            speedValRect.offsetMin = Vector2.zero;
+            speedValRect.offsetMax = Vector2.zero;
+            speedValueText = speedValObj.GetComponent<TextMeshProUGUI>();
+
+            // "MPH" label — below speed number
+            var unitObj = UIFactory.CreateText("SpeedUnit", speedPanel.transform,
+                "MPH", 28, new Color(0.6f, 0.6f, 0.6f),
+                FontStyles.Normal, TextAlignmentOptions.Center);
+            var unitRect = unitObj.GetComponent<RectTransform>();
+            unitRect.anchorMin = new Vector2(0.18f, 0);
+            unitRect.anchorMax = new Vector2(0.82f, 0.25f);
+            unitRect.offsetMin = Vector2.zero;
+            unitRect.offsetMax = Vector2.zero;
+            speedUnitText = unitObj.GetComponent<TextMeshProUGUI>();
         }
 
         private GameObject CreateGroup(string name, Transform parent)
@@ -231,6 +287,7 @@ namespace HotToMark.UI
                 return;
 
             UpdateModeLabel();
+            UpdateSpeedometer();
 
             bool preRoll = state.phase == GamePhase.PreRoll;
             bool driving = state.phase == GamePhase.Driving;
@@ -269,6 +326,32 @@ namespace HotToMark.UI
                 preRollText.text = "ACTION!";
                 preRollText.color = Color.green;
                 preRollStartTime = 0;
+            }
+        }
+
+        private void UpdateSpeedometer()
+        {
+            float absSpeed = Mathf.Abs(state.speed);
+
+            if (speedValueText != null)
+            {
+                speedValueText.text = $"{absSpeed:F0}";
+                // Color shifts: white -> yellow -> red
+                if (absSpeed > 50)
+                    speedValueText.color = new Color(1f, 0.3f, 0.2f);
+                else if (absSpeed > 30)
+                    speedValueText.color = new Color(1f, 0.75f, 0.2f);
+                else
+                    speedValueText.color = Color.white;
+            }
+
+            if (gearIndicatorText != null)
+            {
+                bool isReverse = state.gear == Gear.Reverse;
+                gearIndicatorText.text = isReverse ? "R" : "D";
+                gearIndicatorText.color = isReverse
+                    ? new Color(1f, 0.3f, 0.3f)
+                    : new Color(0.2f, 0.9f, 0.2f);
             }
         }
 
